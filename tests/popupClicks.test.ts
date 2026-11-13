@@ -146,7 +146,7 @@ describe("choosing by click", () => {
     expect(findPopup(app!.screen(), "Theme")).toBeUndefined();
   });
 
-  test("a click inside a popup that isn't on a row does nothing", async () => {
+  test("a click inside a popup that isn't on a row (the borders, the filter line) does nothing", async () => {
     await start();
     await app!.press(keys.ctrlK);
     await app!.waitForScreen("Switch conversation");
@@ -155,8 +155,8 @@ describe("choosing by click", () => {
 
     await app!.click(popup.left + 5, popup.top);
     await app!.click(popup.left + 5, popup.top + 1);
-    await app!.click(popup.left + 5, popup.top + 2);
-    await app!.click(popup.left, popup.top + 3);
+    await app!.click(popup.left, popup.top + 2);
+    await app!.click(popup.left + 5, popup.bottom);
 
     expect(findPopup(app!.screen(), "Switch conversation")).toBeDefined();
 
@@ -229,7 +229,7 @@ describe("clicking outside a popup closes it and touches nothing under the click
     await app!.press(keys.down);
     await waitFor(() => currentThemeName !== defaultThemeName);
     await app!.click(0, 0);
-    await waitFor(() => !app!.screen().includes("Enter keep and save"));
+    await waitFor(() => findPopup(app!.screen(), "Theme") === undefined);
 
     expect(currentThemeName).toBe(defaultThemeName);
     expect(saved).toEqual([]);

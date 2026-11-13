@@ -113,7 +113,7 @@ const switcherTitle = () =>
 
 const results = (): string[] => {
   return (findPopup(app.screen(), "Switch conversation")?.rows ?? [])
-    .slice(2)
+    .slice(1)
     .map((line) => line.replace(/^\s*(› )?/, "").trimEnd())
     .filter(Boolean);
 };

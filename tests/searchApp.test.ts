@@ -52,7 +52,7 @@ async function start({
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
 const popup = () => findPopup(app.screen(), searchTitle);
 const popupText = () => popup()?.rows.join("\n") ?? "";
-const title = () => popup()?.rows[0]?.trim() ?? "";
+const title = () => popup()?.topBorder ?? "";
 const searchCalls = () =>
   app.slack.calls.filter((call) => call.method === "search.messages");
 
@@ -75,7 +75,8 @@ test("/ from the sidebar opens a search prompt that says what to type, and runs 
 
   expect(popup()).toBeDefined();
   expect(popupText()).toContain("Type a query and press Enter");
-  expect(statusBar()).toContain("Enter search");
+  expect(popup()!.bottomBorder).toContain("Enter search");
+  expect(statusBar()).not.toContain("Enter search");
   expect(searchCalls()).toHaveLength(0);
 });
 
@@ -87,7 +88,7 @@ test("Enter runs the query and lists results newest first with conversation, aut
 
   const text = popupText();
 
-  expect(popup()?.rows[1]).toContain("> proton");
+  expect(popup()?.rows[0]).toContain("> proton");
   expect(title()).toContain("4 matches");
   expect(text).toContain("#general · Peter Venkman");
   expect(text).toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/);
@@ -106,7 +107,7 @@ test("Enter runs the query and lists results newest first with conversation, aut
 });
 
 test("scrolling to the last result loads the next page, and the end of results is shown", async () => {
-  await start();
+  await start({ rows: 24 });
 
   await searchFor("proton");
   await app.waitForScreen("proton pack lunch");
@@ -280,7 +281,7 @@ test("the last query is remembered: reopening search starts with it and its resu
   await app.press(keys.escape);
   await app.press("/");
 
-  expect(popup()?.rows[1]).toContain("> proton");
+  expect(popup()?.rows[0]).toContain("> proton");
   expect(popupText()).toContain("proton pack lunch");
   expect(searchCalls().filter((call) => call.params.page === "1")).toHaveLength(
     1,
@@ -293,7 +294,7 @@ test("while typing, letters that are list keys go into the query", async () => {
   await app.press("/");
   await type("jkgG");
 
-  expect(popup()?.rows[1]).toContain("> jkgG");
+  expect(popup()?.rows[0]).toContain("> jkgG");
 });
 
 test("a small terminal still shows whole results and scrolls through them", async () => {

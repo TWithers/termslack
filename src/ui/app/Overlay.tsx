@@ -2,7 +2,9 @@ import { Box } from "ink";
 import { Text } from "../SafeText";
 import type { ReactNode } from "react";
 import type { InputState } from "../input/textInput";
+import { keyVariants } from "../borderLabels";
 import { theme } from "../theme";
+import { TitledBox } from "../TitledBox";
 
 /** One item of an overlay's list: one row, or `itemHeight` rows when the overlay says so. */
 export type OverlayItem = {
@@ -20,9 +22,9 @@ export const selectableRowIndent = 3;
 /** Columns an overlay pads its list on the left. */
 export const overlayPadding = 1;
 
-/** Rows an overlay spends on its title, and on its filter line when it has one. */
+/** Rows an overlay spends inside its border before the list: its filter line when it has one (the title is on the border). */
 export function overlayChrome(hasFilter: boolean): number {
-  return hasFilter ? 2 : 1;
+  return hasFilter ? 1 : 0;
 }
 
 /** How big a popup is: `compact` for the quick switcher, `large` for the help and search results. */
@@ -194,7 +196,8 @@ export function overlayInnerHeight(
 
 /**
  * A popup drawn over the panes, in an area of `areaWidth` by `areaHeight`:
- * a bordered box with a title, an optional filter line, and a list showing
+ * a bordered box with its title on the top border and its `keys` on the
+ * bottom border, an optional filter line, and a list showing
  * the rows from `start`, with the item at `selected` highlighted when
  * `selected` is given. The help screen is just the list; the quick switcher
  * and search add the filter line and the selection. The caller owns the
@@ -207,6 +210,7 @@ export function overlayInnerHeight(
 export function Overlay({
   size,
   title,
+  keys,
   filter,
   items,
   start,
@@ -218,7 +222,10 @@ export function Overlay({
   areaHeight,
 }: {
   size: OverlaySize;
+  /** Drawn on the top border. */
   title: string;
+  /** What the keys do while the popup is open, drawn on the bottom border and shortened to fit. */
+  keys?: string;
   /** The filter line's text and cursor. Omitted: no filter line. */
   filter?: InputState;
   items: OverlayItem[];
@@ -248,18 +255,23 @@ export function Overlay({
   const under = filter?.text.slice(filter.cursor, filter.cursor + 1) ?? "";
 
   return (
-    <Box
-      position="absolute"
-      top={top}
-      left={left}
+    <TitledBox
+      frame={{ position: "absolute", top, left }}
       width={width}
       height={height}
-      borderStyle="round"
       borderColor={theme.popupBorder}
-      borderBackgroundColor={theme.popupBackground}
-      flexDirection="column"
-      overflow="hidden"
-      backgroundColor={theme.popupBackground}
+      background={theme.popupBackground}
+      labels={{
+        topLeft: { text: title, color: theme.popupTitle, bold: true },
+        ...(keys === undefined
+          ? {}
+          : {
+              bottomLeft: {
+                text: keyVariants(keys),
+                color: theme.secondaryText,
+              },
+            }),
+      }}
     >
       <Box
         flexDirection="column"
@@ -269,9 +281,6 @@ export function Overlay({
         overflow="hidden"
         paddingLeft={overlayPadding}
       >
-        <Text wrap="truncate" bold color={theme.popupTitle}>
-          {title}
-        </Text>
         {filter ? (
           <Text wrap="truncate" color={theme.text}>
             <Text color={theme.popupTitle}>{"> "}</Text>
@@ -306,6 +315,6 @@ export function Overlay({
           </Text>
         ) : null}
       </Box>
-    </Box>
+    </TitledBox>
   );
 }

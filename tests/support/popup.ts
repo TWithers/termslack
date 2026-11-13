@@ -7,15 +7,20 @@ export type Popup = {
   right: number;
   /** Screen row of the border's bottom edge. */
   bottom: number;
-  /** The text inside the border, one entry per row, title row first, right edge untrimmed. */
+  /** The top border row as drawn, with the title on it, from the left corner to the right. */
+  topBorder: string;
+  /** The bottom border row as drawn, with the keys on it. */
+  bottomBorder: string;
+  /** The text inside the border, one entry per row, first row first (the title is on the border, not a row), right edge untrimmed. */
   rows: string[];
 };
 
-/** Finds the bordered popup whose title row contains `title` on a rendered screen, or undefined when none is drawn. */
+/** Finds the bordered popup whose top border carries `title` on a rendered screen, or undefined when none is drawn. */
 export function findPopup(screen: string, title: string): Popup | undefined {
   const lines = screen.split("\n");
-  const titleRow = lines.findIndex((line) => line.includes(title));
-  const top = titleRow - 1;
+  const top = lines.findIndex(
+    (line) => line.includes(title) && line.includes("╭"),
+  );
 
   if (top < 0) {
     return undefined;
@@ -32,11 +37,16 @@ export function findPopup(screen: string, title: string): Popup | undefined {
     (line, index) => index > top && [...line][left] === "╰",
   );
 
+  const across = (line: string | undefined) =>
+    [...(line ?? "")].slice(left, right).join("");
+
   return {
     left,
     top,
     right,
     bottom,
+    topBorder: across(lines[top]),
+    bottomBorder: across(lines[bottom]),
     rows: lines
       .slice(top + 1, bottom)
       .map((line) => [...line].slice(left + 1, right - 1).join("")),

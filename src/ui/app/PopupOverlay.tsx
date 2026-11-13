@@ -1,5 +1,10 @@
+import { channelDetailsKeyHints } from "./ChannelDetails";
+import { channelMenuKeyHints } from "./ChannelMenu";
+import { helpKeyHints } from "./Help";
 import { Overlay } from "./Overlay";
-import { searchResultHeight } from "./SearchResults";
+import { searchKeyHints, searchResultHeight } from "./SearchResults";
+import { switcherKeyHints } from "./Switcher";
+import { themeKeyHints } from "./ThemePicker";
 import type { Popups } from "./usePopups";
 
 /** The help screen, the switcher, the theme picker or the search, whichever is open, over the panes; nothing when none is. */
@@ -17,6 +22,7 @@ export function PopupOverlay({
       <Overlay
         size="large"
         title="Keyboard shortcuts"
+        keys={helpKeyHints}
         items={help.items}
         start={help.start}
         areaWidth={columns}
@@ -30,6 +36,7 @@ export function PopupOverlay({
       <Overlay
         size="compact"
         title={switcher.title}
+        keys={switcherKeyHints}
         filter={switcher.filter}
         items={switcher.items}
         start={switcher.start}
@@ -45,6 +52,7 @@ export function PopupOverlay({
       <Overlay
         size="compact"
         title={themePicker.title}
+        keys={themeKeyHints}
         filter={themePicker.filter}
         items={themePicker.items}
         start={themePicker.start}
@@ -60,6 +68,7 @@ export function PopupOverlay({
       <Overlay
         size="compact"
         title={channelMenu.title}
+        keys={channelMenuKeyHints}
         items={channelMenu.items}
         start={channelMenu.start}
         selected={channelMenu.selected}
@@ -75,6 +84,7 @@ export function PopupOverlay({
       <Overlay
         size="compact"
         title={channelDetails.title}
+        keys={channelDetailsKeyHints}
         items={channelDetails.items}
         start={channelDetails.start}
         areaWidth={columns}
@@ -88,6 +98,7 @@ export function PopupOverlay({
       <Overlay
         size="large"
         title={search.title}
+        keys={searchKeyHints}
         filter={search.filter}
         items={search.items}
         start={search.start}

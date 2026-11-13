@@ -3,9 +3,8 @@ import { theme } from "../theme";
 import type { OverlayItem } from "./Overlay";
 import type { ThemeChoice } from "./themeChoices";
 
-/** What the keys do while the theme picker is open; also shown by the status bar. */
-export const themeKeyHints =
-  "type to filter · ↑/↓ or Ctrl+P/Ctrl+N preview · Enter keep and save · Esc restore";
+/** What the keys do while the theme picker is open; drawn on its bottom border. */
+export const themeKeyHints = "↑/↓ preview · Enter keep and save · Esc restore";
 
 /** One row: the theme's name, with `light` for a light theme and `in use` for the theme the picker opened over. */
 export function themeItem(

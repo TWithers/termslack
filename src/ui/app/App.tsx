@@ -949,11 +949,13 @@ export function App({
         prompt={actions.prompt ?? popups.prompt}
         hints={
           popups.hints ??
-          (focusedEdit
-            ? editKeyHints
-            : focus === "sidebar"
-              ? sidebarKeyHints(hideMuted)
-              : paneKeyHints[focus])
+          (popups.isOpen
+            ? undefined
+            : focusedEdit
+              ? editKeyHints
+              : focus === "sidebar"
+                ? sidebarKeyHints(hideMuted)
+                : paneKeyHints[focus])
         }
       />
     </Box>

@@ -13,9 +13,9 @@ import { RunsText } from "./RunsText";
 import { sidebarEntry } from "./sidebarEntries";
 import type { Run } from "./wrap";
 
-/** What the keys do while the search overlay is open; also shown by the status bar. */
+/** What the keys do while the search overlay is open; drawn on its bottom border. */
 export const searchKeyHints =
-  "type a query · Enter search or open · ↑/↓ or Ctrl+P/Ctrl+N choose · PgUp/PgDn page · Esc close";
+  "type a query · Enter search or open · ↑/↓ choose · PgUp/PgDn page · Esc close";
 
 /** The most lines of a message's text a result shows. */
 const textLines = 3;

@@ -95,7 +95,7 @@ const switcherIsOpen = () => app.screen().includes("Switch conversation");
 /** The switcher's result rows, without the highlight marker. */
 const results = (): string[] => {
   return (findPopup(app.screen(), "Switch conversation")?.rows ?? [])
-    .slice(2)
+    .slice(1)
     .map((line) => line.replace(/^\s*(› )?/, "").trimEnd())
     .filter(Boolean);
 };
@@ -134,7 +134,10 @@ test("Ctrl+K opens the switcher over everything the user is in, leaving out arch
   await app.press(keys.ctrlK);
 
   expect(switcherIsOpen()).toBe(true);
-  expect(statusBar()).toContain("Enter open");
+  expect(
+    findPopup(app.screen(), "Switch conversation")!.bottomBorder,
+  ).toContain("Enter open");
+  expect(statusBar()).not.toContain("Enter open");
   expect(results()).toEqual(
     expect.arrayContaining([
       "#general",
@@ -401,9 +404,9 @@ test("the switcher is a compact popup near the top over the panes, which stay wh
   expect(popup.right - popup.left).toBe(60);
   expect(popup.left).toBe(20);
   expect(popup.top).toBe(7);
-  // Title, filter line and one row per result, up to ten.
-  expect(popup.rows.length).toBe(2 + results().length);
-  expect(popup.rows.length).toBeLessThanOrEqual(12);
+  // The filter line and one row per result, up to ten.
+  expect(popup.rows.length).toBe(1 + results().length);
+  expect(popup.rows.length).toBeLessThanOrEqual(11);
 
   const after = app.screen().split("\n");
 
@@ -438,8 +441,8 @@ test("nothing from the panes shows through the switcher popup, even on its empty
   const empty = findPopup(app.screen(), "Switch conversation")!;
 
   expect(results()).toEqual([]);
-  expect(empty.rows).toHaveLength(3);
-  expect(empty.rows[2]).toBe(" ".repeat(58));
+  expect(empty.rows).toHaveLength(2);
+  expect(empty.rows[1]).toBe(" ".repeat(58));
 });
 
 test("in a narrow terminal the switcher popup fills the width, and a long row is cut off, not wrapped", async () => {
@@ -455,7 +458,7 @@ test("in a narrow terminal the switcher popup fills the width, and a long row is
   await type("peter");
 
   expect(results()).toEqual(["@Peter Venkman", "@Peter Venkman, stantz"]);
-  expect(findPopup(app.screen(), "Switch conversation")!.rows).toHaveLength(4);
+  expect(findPopup(app.screen(), "Switch conversation")!.rows).toHaveLength(3);
 });
 
 test("Ctrl+K from the help closes it and opens the switcher", async () => {

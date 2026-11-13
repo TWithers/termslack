@@ -284,7 +284,7 @@ test("a left public channel is a 'not a member' result in the switcher once the 
   }
 
   const rows = (findPopup(app.screen(), "Switch conversation")?.rows ?? [])
-    .slice(2)
+    .slice(1)
     .map((line) => line.replace(/^\s*(› )?/, "").trimEnd());
 
   expect(rows.some((row) => row.startsWith("#random not a member"))).toBe(true);

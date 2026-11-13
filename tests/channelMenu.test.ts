@@ -106,7 +106,10 @@ test("m on a channel opens the menu titled with its name, listing Leave channel 
   expect(popup).toBeDefined();
   expect(popup!.rows.join("\n")).toContain("l Leave channel");
   expect(popup!.rows.join("\n")).toContain("›");
-  expect(statusBar()).toContain("Enter or the item's letter choose");
+  expect(popup!.bottomBorder).toContain(
+    "j/k or ↑/↓ move · Enter/letter choose · Esc close",
+  );
+  expect(statusBar()).not.toContain("Esc close");
 });
 
 test("m on a private channel opens its menu too", async () => {
@@ -229,20 +232,20 @@ test("a left click on the item chooses it", async () => {
 
   const popup = menu("#general")!;
 
-  await app.click(popup.left + 3, popup.top + 5);
+  await app.click(popup.left + 3, popup.top + 4);
 
   expect(menu("#general")).toBeUndefined();
   expect(statusBar()).toContain("Leave #general? y/n");
 });
 
-test("a click on the popup's title does nothing, outside it closes the menu", async () => {
+test("a click on the popup's border does nothing, outside it closes the menu", async () => {
   await start();
 
   await app.press("m");
 
   const popup = menu("#general")!;
 
-  await app.click(popup.left + 3, popup.top + 1);
+  await app.click(popup.left + 3, popup.top);
 
   expect(menu("#general")).toBeDefined();
 
@@ -289,8 +292,8 @@ test("overlayBox puts an anchored compact popup at the anchor, kept on the scree
 
   expect(
     overlayBox("compact", 120, 30, { ...rows, anchor: { top: 7, left: 32 } }),
-  ).toMatchObject({ top: 7, left: 32, height: 4 });
+  ).toMatchObject({ top: 7, left: 32, height: 3 });
   expect(
     overlayBox("compact", 120, 30, { ...rows, anchor: { top: 29, left: 100 } }),
-  ).toMatchObject({ top: 26, left: 60 });
+  ).toMatchObject({ top: 27, left: 60 });
 });

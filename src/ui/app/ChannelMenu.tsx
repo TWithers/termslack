@@ -2,9 +2,9 @@ import { Text } from "../SafeText";
 import { theme } from "../theme";
 import type { OverlayItem } from "./Overlay";
 
-/** What the keys do while the channel menu is open; also shown by the status bar. */
+/** What the keys do while the channel menu is open; drawn on its bottom border. */
 export const channelMenuKeyHints =
-  "j/k or ↑/↓ move · Enter or the item's letter choose · Esc close";
+  "j/k or ↑/↓ move · Enter/letter choose · Esc close";
 
 /** One row: the item's letter, then its label. */
 export function channelMenuItem(

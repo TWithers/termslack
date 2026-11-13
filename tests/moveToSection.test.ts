@@ -98,7 +98,7 @@ test("Move to section lists the sections in order with the current one marked, C
 
   const rows = list()!.rows.map((row) => row.slice(1).trimEnd());
 
-  expect(rows.slice(1)).toEqual([
+  expect(rows).toEqual([
     "› 1 ✓ Work",
     "  2   Play",
     "  c   Channels (no section)",
@@ -185,7 +185,7 @@ test("a click on a row of the list chooses it", async () => {
 
   const popup = list()!;
 
-  await app.click(popup.left + 5, popup.top + 3);
+  await app.click(popup.left + 5, popup.top + 2);
 
   await waitForSidebar(["Work", "#random", "Play", "#general", "Channels"]);
 });

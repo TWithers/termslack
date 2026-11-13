@@ -350,7 +350,7 @@ test("/ brings back the same results with the highlight where it was", async () 
 
   const popup = findPopup(app.screen(), "Search messages");
 
-  expect(popup?.rows[1]).toContain("> needle");
+  expect(popup?.rows[0]).toContain("> needle");
   expect(popup?.rows.join("\n")).toContain("needle 110");
   expect(popup?.rows.join("\n")).toContain("needle 30");
   expect(app.session.searchState().results).toHaveLength(2);

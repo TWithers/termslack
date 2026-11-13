@@ -5,7 +5,7 @@ import type { OverlayItem } from "./Overlay";
 import { type Run, wrapRuns } from "./wrap";
 import { shortcutGroups, shortcutLabel, shortcuts } from "./shortcuts";
 
-/** What the keys do while the help screen is open; also shown by the status bar. */
+/** What the keys do while the help screen is open; drawn on its bottom border. */
 export const helpKeyHints =
   "j/k scroll · PgUp/PgDn page · g/G top/bottom · Esc or ? close";
 

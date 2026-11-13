@@ -95,7 +95,7 @@ const popupRows = () => findPopup(app.screen(), title)?.rows ?? [];
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
 const listed = () =>
   popupRows()
-    .slice(2)
+    .slice(1)
     .map((line) => line.replace(/^\s*(› )?/, "").trimEnd())
     .filter(Boolean);
 const highlighted = () =>
@@ -127,7 +127,10 @@ test("T opens the theme popup from the sidebar, listing slack-dark first, then t
   expect(listed()[0]).toBe("slack-dark in use");
   expect(listed()[2]).toBe("catppuccin-latte light");
   expect(highlighted()).toBe("slack-dark in use");
-  expect(statusBar()).toContain("Enter keep and save");
+  expect(findPopup(app.screen(), title)!.bottomBorder).toContain(
+    "Enter keep and save",
+  );
+  expect(statusBar()).not.toContain("Enter keep and save");
 });
 
 test("the highlighted row starts on the theme in use", async () => {

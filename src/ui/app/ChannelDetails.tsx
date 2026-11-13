@@ -9,7 +9,7 @@ import type { OverlayItem } from "./Overlay";
 import { inlineRuns } from "./paneRows";
 import { type Run, wrapRuns } from "./wrap";
 
-/** What the keys do while the channel details are open; also shown by the status bar. */
+/** What the keys do while the channel details are open; drawn on its bottom border. */
 export const channelDetailsKeyHints =
   "j/k scroll · PgUp/PgDn page · g/G top/bottom · Esc close";
 

@@ -144,7 +144,8 @@ test("the menu lists Channel details with its letter, and choosing it opens the 
   expect(shown).toContain("ID           C012AB3CD");
   expect(shown).toContain("Section      Channels");
   expect(shown).toContain("Muted        no");
-  expect(statusBar()).toContain("j/k scroll");
+  expect(details("#general details")!.bottomBorder).toContain("j/k scroll");
+  expect(statusBar()).not.toContain("j/k scroll");
   expect(detailsCalls().at(-1)!.params).toMatchObject({
     channel: "C012AB3CD",
     include_num_members: "true",
@@ -368,6 +369,6 @@ test("opened from a right-click menu it works the same", async () => {
     "#secret",
   )!;
 
-  await app.click(menu.left + 3, menu.top + 3);
+  await app.click(menu.left + 3, menu.top + 2);
   await app.waitForScreen("#secret details");
 });

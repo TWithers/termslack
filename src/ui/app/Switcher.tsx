@@ -4,9 +4,9 @@ import type { OverlayItem } from "./Overlay";
 import { badgeText, entryStyle } from "./sidebarEntries";
 import type { SwitcherCandidate } from "./switcherRanking";
 
-/** What the keys do while the quick switcher is open; also shown by the status bar. */
+/** What the keys do while the quick switcher is open; drawn on its bottom border. */
 export const switcherKeyHints =
-  "type to filter · ↑/↓ or Ctrl+P/Ctrl+N choose · Enter open · Esc close";
+  "type to filter · ↑/↓ choose · Enter open · Esc close";
 
 /** One result row: the name styled like the sidebar's (unread bold, mentions with a red count), and any note. */
 export function switcherItem(

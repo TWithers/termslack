@@ -4,9 +4,6 @@ import type {
   SearchResult,
   WorkspaceSession,
 } from "../../session/workspaceSession";
-import { channelDetailsKeyHints } from "./ChannelDetails";
-import { channelMenuKeyHints } from "./ChannelMenu";
-import { helpKeyHints } from "./Help";
 import type { PopupRegion } from "./hitTest";
 import {
   overlayBox,
@@ -17,9 +14,7 @@ import {
 } from "./Overlay";
 import { reactionKeyHints } from "./ReactionPrompt";
 import { sectionKeyHints } from "./SectionPrompt";
-import { searchKeyHints, searchResultHeight } from "./SearchResults";
-import { switcherKeyHints } from "./Switcher";
-import { themeKeyHints } from "./ThemePicker";
+import { searchResultHeight } from "./SearchResults";
 import { pressed } from "./shortcuts";
 import type { SwitcherCandidate } from "./switcherRanking";
 import { useChannelDetails } from "./useChannelDetails";
@@ -348,24 +343,21 @@ export function usePopups({
     /** The question the status bar asks, if a join or leave is pending. */
     prompt: joinPrompt.prompt ?? leavePrompt.prompt,
 
-    /** The key hints of the open popup, or undefined when none is open. */
-    hints: help.isOpen
-      ? helpKeyHints
-      : switcher.isOpen
-        ? switcherKeyHints
-        : themePicker.isOpen
-          ? themeKeyHints
-          : channelMenu.isOpen
-            ? channelMenuKeyHints
-            : channelDetails.isOpen
-              ? channelDetailsKeyHints
-              : search.isOpen
-                ? searchKeyHints
-                : reactionPrompt.isOpen
-                  ? reactionKeyHints
-                  : sectionPrompt.isOpen
-                    ? sectionKeyHints
-                    : undefined,
+    /** Whether any popup is open, so the keys of the panes behind it are not what the status bar should teach. */
+    isOpen:
+      help.isOpen ||
+      switcher.isOpen ||
+      themePicker.isOpen ||
+      channelMenu.isOpen ||
+      channelDetails.isOpen ||
+      search.isOpen,
+
+    /** The key hints of the open prompt, which draws no border of its own yet; the popups with a border show theirs on it. */
+    hints: reactionPrompt.isOpen
+      ? reactionKeyHints
+      : sectionPrompt.isOpen
+        ? sectionKeyHints
+        : undefined,
 
     /** Opens the search, or says in the status bar why it can't be. */
     openSearch() {

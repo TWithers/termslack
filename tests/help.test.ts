@@ -73,7 +73,10 @@ test("? opens the help from the sidebar before any conversation is open, and Esc
   await app.press("?");
 
   expect(helpIsOpen()).toBe(true);
-  expect(statusBar()).toContain("Esc or ? close");
+  expect(findPopup(app.screen(), "Keyboard shortcuts")!.bottomBorder).toContain(
+    "Esc or ? close",
+  );
+  expect(statusBar()).not.toContain("Esc or ? close");
   expect(app.screen()).toContain("#general");
 
   await app.press(keys.escape);
