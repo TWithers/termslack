@@ -1,0 +1,42 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "subteam_members_changed",
+      "subteam_id": "S0615G0KT",
+      "team_id": "T123ABC456",
+      "date_previous_update": 1446670362,
+      "date_update": 1492906952,
+      "added_users": ["U222222222"],
+      "added_users_count": 1,
+      "removed_users": ["U333333333"],
+      "removed_users_count": 1,
+      "event_ts": "1492906952.000000"
+    },
+    "type": "event_callback"
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "subteam_self_added",
+      "subteam_id": "S0615G0KT",
+      "event_ts": "1492906953.000000"
+    },
+    "type": "event_callback"
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "subteam_self_removed",
+      "subteam_id": "S0615G0KT",
+      "event_ts": "1492906954.000000"
+    },
+    "type": "event_callback"
+  }
+]

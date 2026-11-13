@@ -1,0 +1,9 @@
+[
+  {
+    "ok": true,
+    "members": ["U123ABC456", "U222222222", "U333333333"],
+    "response_metadata": {
+      "next_cursor": ""
+    }
+  }
+]

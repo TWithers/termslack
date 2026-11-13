@@ -1,0 +1,18 @@
+[
+  {
+    "ok": true,
+    "bot": {
+      "id": "BB12033",
+      "deleted": false,
+      "name": "github",
+      "updated": 1481719283,
+      "app_id": "A4H1JB4AZ",
+      "user_id": "U13LXTHFC",
+      "icons": {
+        "image_36": "https://example.com/img_36.png",
+        "image_48": "https://example.com/img_48.png",
+        "image_72": "https://example.com/img_72.png"
+      }
+    }
+  }
+]

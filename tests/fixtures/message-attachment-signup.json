@@ -1,0 +1,82 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "message",
+      "subtype": "bot_message",
+      "channel": "C123ABC456",
+      "channel_type": "channel",
+      "ts": "1762286400.000400",
+      "username": "Signup Bot",
+      "bot_id": "B0000000001",
+      "icons": { "emoji": ":smile:" },
+      "text": "New Account",
+      "blocks": [
+        {
+          "type": "rich_text",
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [{ "type": "text", "text": "New Account" }]
+            }
+          ]
+        }
+      ],
+      "attachments": [
+        {
+          "id": 1,
+          "color": "2eb886",
+          "fallback": "New Account",
+          "title": "New Account - Signup Form",
+          "fields": [
+            {
+              "title": "User.id",
+              "value": "<https://example.com/admin/users/101|101>",
+              "short": true
+            },
+            { "title": "User.name", "value": "Jane Example", "short": true },
+            {
+              "title": "User.email",
+              "value": "<mailto:jane@example.com|jane@example.com>",
+              "short": true
+            },
+            {
+              "title": "Company.id",
+              "value": "<https://example.com/admin/companies/202|202>",
+              "short": true
+            },
+            {
+              "title": "Campaign",
+              "value": "Trial",
+              "short": true
+            },
+            { "title": "Source", "value": "Organic", "short": true },
+            {
+              "title": "Medium",
+              "value": "Landing Page",
+              "short": true
+            },
+            {
+              "title": "Converted_At",
+              "value": "2026-11-04 19:48:24",
+              "short": true
+            },
+            { "title": "Type", "value": "initial", "short": true }
+          ]
+        }
+      ]
+    },
+    "type": "event_callback",
+    "authorizations": [
+      {
+        "team_id": "T123ABC456",
+        "is_bot": false,
+        "is_enterprise_install": false
+      }
+    ],
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  }
+]

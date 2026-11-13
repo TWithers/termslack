@@ -1,0 +1,15 @@
+[
+  {
+    "ok": true,
+    "channel": {
+      "id": "D0C0F7S8Y",
+      "created": 1498500348,
+      "is_im": true,
+      "is_org_shared": false,
+      "user": "U222222222",
+      "last_read": "1513718191.000038",
+      "is_open": true,
+      "locale": "en-US"
+    }
+  }
+]

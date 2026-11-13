@@ -1,0 +1,51 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "message",
+      "channel": "C123ABC456",
+      "channel_type": "channel",
+      "user": "U123ABC456",
+      "text": "Anyone seen the <@U222222222> deploy plan?",
+      "ts": "1673464730.703009"
+    },
+    "type": "event_callback",
+    "authorizations": [
+      {
+        "team_id": "T123ABC456",
+        "user_id": "U123ABC456",
+        "is_bot": false,
+        "is_enterprise_install": false
+      }
+    ],
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "message",
+      "channel": "C123ABC456",
+      "channel_type": "channel",
+      "user": "U222222222",
+      "text": "yes, it's in the wiki",
+      "ts": "1673464745.620769",
+      "thread_ts": "1673464730.703009"
+    },
+    "type": "event_callback",
+    "authorizations": [
+      {
+        "team_id": "T123ABC456",
+        "user_id": "U123ABC456",
+        "is_bot": false,
+        "is_enterprise_install": false
+      }
+    ],
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  }
+]

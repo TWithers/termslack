@@ -1,0 +1,13 @@
+[
+  {
+    "ok": true,
+    "emoji": {
+      "bowtie": "https://emoji.slack-edge.com/T123ABC456/bowtie/0a1b2c3d4e5f.png",
+      "squirrel": "https://emoji.slack-edge.com/T123ABC456/squirrel/1a2b3c4d5e6f.png",
+      "shipit": "alias:squirrel",
+      "party": "alias:tada",
+      "thumbs_up_alias": "alias:+1"
+    },
+    "cache_ts": "1360782804.083113"
+  }
+]

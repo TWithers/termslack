@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun check
+      - run: bun test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tagged commit must be on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at a commit that isn't on main."
+            exit 1
+          fi
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Tag must match package.json
+        run: bun scripts/check-tag.ts "$GITHUB_REF_NAME"
+      - name: Release notes from CHANGELOG.md
+        run: bun scripts/release-notes.ts "${GITHUB_REF_NAME#v}" release-notes.md
+      - run: bun run build:release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: dist/release/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+
+  smoke:
+    needs: build
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - runner: macos-latest
+            platform: darwin-arm64
+          - runner: ubuntu-latest
+            platform: linux-x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+      - name: Run the ${{ matrix.platform }} binary
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir smoke
+          tar -xzf "release/termslack-${version}-${{ matrix.platform }}.tar.gz" -C smoke
+          output="$(./smoke/termslack --version)"
+          echo "$output"
+          if [ "$output" != "termslack ${version}" ]; then
+            echo "Expected 'termslack ${version}'" >&2
+            exit 1
+          fi
+
+  publish:
+    needs: smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: notes
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/*.tar.gz release/checksums.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notes/release-notes.md \
+            --verify-tag
+
+  tap:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+      - name: Generate the formula
+        run: bun scripts/homebrew-formula.ts "${GITHUB_REF_NAME#v}" release/checksums.txt termslack.rb
+      - name: Push the formula to the Homebrew tap
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is not set. The release is already published; add the secret and re-run this job to update the tap."
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          gh auth setup-git
+          gh repo clone TWithers/homebrew-tap tap
+          mkdir -p tap/Formula
+          cp termslack.rb tap/Formula/termslack.rb
+          cd tap
+          git config user.name "termslack release bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/termslack.rb
+          if git diff --cached --quiet; then
+            echo "Formula already up to date."
+            exit 0
+          fi
+          git commit -m "termslack ${version}"
+          git push origin HEAD:main

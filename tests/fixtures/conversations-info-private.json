@@ -1,0 +1,34 @@
+[
+  {
+    "ok": true,
+    "channel": {
+      "id": "G012AB3CD",
+      "name": "secret",
+      "is_channel": false,
+      "is_group": true,
+      "is_im": false,
+      "is_mpim": false,
+      "is_private": true,
+      "created": 1503435939,
+      "is_archived": false,
+      "is_general": false,
+      "unlinked": 0,
+      "name_normalized": "secret",
+      "is_shared": false,
+      "is_org_shared": false,
+      "is_pending_ext_shared": false,
+      "creator": "U123ABC456",
+      "topic": {
+        "value": "Company-wide announcements",
+        "creator": "",
+        "last_set": 0
+      },
+      "purpose": {
+        "value": "General chat",
+        "creator": "",
+        "last_set": 0
+      },
+      "is_member": true
+    }
+  }
+]

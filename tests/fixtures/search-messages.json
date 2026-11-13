@@ -1,0 +1,149 @@
+[
+  {
+    "ok": true,
+    "query": "proton",
+    "messages": {
+      "total": 4,
+      "pagination": {
+        "total_count": 4,
+        "page": 1,
+        "per_page": 3,
+        "page_count": 2,
+        "first": 1,
+        "last": 3
+      },
+      "paging": {
+        "count": 3,
+        "total": 4,
+        "page": 1,
+        "pages": 2
+      },
+      "matches": [
+        {
+          "iid": "iid-1",
+          "team": "T012AB3CD",
+          "score": 0,
+          "channel": {
+            "id": "C012AB3CD",
+            "is_channel": true,
+            "is_group": false,
+            "is_im": false,
+            "is_mpim": false,
+            "is_shared": false,
+            "is_org_shared": false,
+            "is_ext_shared": false,
+            "is_private": false,
+            "name": "general",
+            "pending_shared": [],
+            "is_pending_ext_shared": false
+          },
+          "type": "message",
+          "user": "U222222222",
+          "username": "venkman",
+          "ts": "1700000300.000100",
+          "text": "Has anyone seen the <@U333333333> proton pack? :tada:",
+          "permalink": "https://example.slack.com/archives/C012AB3CD/p1700000300000100"
+        },
+        {
+          "iid": "iid-2",
+          "team": "T012AB3CD",
+          "score": 0,
+          "channel": {
+            "id": "D0C0F7S8Y",
+            "is_channel": false,
+            "is_group": false,
+            "is_im": true,
+            "is_mpim": false,
+            "is_shared": false,
+            "is_org_shared": false,
+            "is_ext_shared": false,
+            "is_private": true,
+            "name": "U222222222",
+            "pending_shared": [],
+            "is_pending_ext_shared": false,
+            "user": "U222222222"
+          },
+          "type": "message",
+          "user": "U222222222",
+          "username": "venkman",
+          "ts": "1700000200.000200",
+          "text": "proton pack lunch at noon? <https://example.com/menu|the menu>",
+          "permalink": "https://example.slack.com/archives/D0C0F7S8Y/p1700000200000200"
+        },
+        {
+          "iid": "iid-3",
+          "team": "T012AB3CD",
+          "score": 0,
+          "channel": {
+            "id": "C061EG9T2",
+            "is_channel": true,
+            "is_group": false,
+            "is_im": false,
+            "is_mpim": false,
+            "is_shared": false,
+            "is_org_shared": false,
+            "is_ext_shared": false,
+            "is_private": false,
+            "name": "random",
+            "pending_shared": [],
+            "is_pending_ext_shared": false
+          },
+          "type": "message",
+          "user": "U333333333",
+          "username": "stantz",
+          "ts": "1700000100.000300",
+          "text": "*proton* reply in a thread",
+          "permalink": "https://example.slack.com/archives/C061EG9T2/p1700000100000300?thread_ts=1700000000.000300&cid=C061EG9T2"
+        }
+      ]
+    }
+  },
+  {
+    "ok": true,
+    "query": "proton",
+    "messages": {
+      "total": 4,
+      "pagination": {
+        "total_count": 4,
+        "page": 2,
+        "per_page": 3,
+        "page_count": 2,
+        "first": 4,
+        "last": 4
+      },
+      "paging": {
+        "count": 3,
+        "total": 4,
+        "page": 2,
+        "pages": 2
+      },
+      "matches": [
+        {
+          "iid": "iid-4",
+          "team": "T012AB3CD",
+          "score": 0,
+          "channel": {
+            "id": "C0DES1GN7",
+            "is_channel": true,
+            "is_group": false,
+            "is_im": false,
+            "is_mpim": false,
+            "is_shared": false,
+            "is_org_shared": false,
+            "is_ext_shared": false,
+            "is_private": false,
+            "name": "design",
+            "pending_shared": [],
+            "is_pending_ext_shared": false
+          },
+          "type": "message",
+          "user": "U888888888",
+          "username": "gozer",
+          "ts": "1700000000.000400",
+          "text": "proton pack design review notes",
+          "permalink": "https://example.slack.com/archives/C0DES1GN7/p1700000000000400"
+        }
+      ]
+    }
+  }
+]

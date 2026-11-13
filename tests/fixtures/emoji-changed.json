@@ -1,0 +1,62 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "emoji_changed",
+      "subtype": "add",
+      "name": "picard_facepalm",
+      "value": "https://my.slack.com/emoji/picard_facepalm/db8e287430eaa459.gif",
+      "event_ts": "1361482916.000004"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "emoji_changed",
+      "subtype": "add",
+      "name": "engage",
+      "value": "alias:tada",
+      "event_ts": "1361482917.000004"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "emoji_changed",
+      "subtype": "remove",
+      "names": ["picard_facepalm"],
+      "event_ts": "1361482918.000004"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "emoji_changed",
+      "subtype": "rename",
+      "old_name": "picard_facepalm",
+      "new_name": "picard_facepalm2",
+      "value": "https://my.slack.com/emoji/picard_facepalm/db8e287430eaa459.gif",
+      "event_ts": "1361482919.000004"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  }
+]

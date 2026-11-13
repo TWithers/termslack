@@ -1,0 +1,80 @@
+[
+  {
+    "ok": true,
+    "members": [
+      {
+        "id": "U123ABC456",
+        "team_id": "T123ABC456",
+        "name": "spengler",
+        "deleted": false,
+        "real_name": "Egon Spengler",
+        "profile": {
+          "status_text": "",
+          "status_emoji": "",
+          "real_name": "Egon Spengler",
+          "display_name": "egon"
+        },
+        "is_bot": false,
+        "updated": 1502138686,
+        "color": "9f69e7"
+      },
+      {
+        "id": "U222222222",
+        "team_id": "T123ABC456",
+        "name": "venkman",
+        "deleted": false,
+        "real_name": "Peter Venkman",
+        "profile": {
+          "status_text": "In a meeting",
+          "status_emoji": ":calendar:",
+          "real_name": "Peter Venkman",
+          "display_name": ""
+        },
+        "is_bot": false,
+        "updated": 1502138686
+      }
+    ],
+    "cache_ts": 1498777272,
+    "response_metadata": {
+      "next_cursor": "dXNlcjpVMEc5V0ZYTlo="
+    }
+  },
+  {
+    "ok": true,
+    "members": [
+      {
+        "id": "U333333333",
+        "team_id": "T123ABC456",
+        "name": "stantz",
+        "deleted": false,
+        "real_name": "",
+        "profile": {
+          "status_text": "",
+          "status_emoji": "",
+          "real_name": "",
+          "display_name": ""
+        },
+        "is_bot": false,
+        "updated": 1502138686,
+        "color": "0a0a0a"
+      },
+      {
+        "id": "U444444444",
+        "team_id": "T123ABC456",
+        "name": "slackbot",
+        "deleted": false,
+        "real_name": "Slackbot",
+        "profile": {
+          "real_name": "Slackbot",
+          "display_name": "Slackbot"
+        },
+        "is_bot": false,
+        "updated": 0
+      }
+    ],
+    "cache_ts": 1498777272,
+    "response_metadata": {
+      "next_cursor": ""
+    }
+  }
+]

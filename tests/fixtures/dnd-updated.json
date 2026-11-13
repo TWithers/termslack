@@ -1,0 +1,40 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "dnd_updated",
+      "user": "U123ABC456",
+      "dnd_status": {
+        "dnd_enabled": true,
+        "next_dnd_start_ts": 1450387800,
+        "next_dnd_end_ts": 1450423800,
+        "snooze_enabled": true,
+        "snooze_endtime": 1450373897
+      },
+      "event_ts": "1450373897.000100"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC456",
+    "event_time": 1450373897
+  },
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "dnd_updated_user",
+      "user": "U222222222",
+      "dnd_status": {
+        "dnd_enabled": true,
+        "next_dnd_start_ts": 1450387800,
+        "next_dnd_end_ts": 1450423800
+      },
+      "event_ts": "1450373897.000200"
+    },
+    "type": "event_callback",
+    "event_id": "Ev123ABC457",
+    "event_time": 1450373897
+  }
+]

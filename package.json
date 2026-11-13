@@ -1,0 +1,40 @@
+{
+  "name": "termslack",
+  "module": "src/index.ts",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "A terminal Slack client: read and write in your channels and DMs from the keyboard.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TWithers/termslack.git"
+  },
+  "private": true,
+  "bin": {
+    "termslack": "src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "build": "bun scripts/build.ts",
+    "build:release": "bun scripts/build.ts --release",
+    "test": "bun test",
+    "test:live": "TERMSLACK_CONFIG_TOKEN=$(bun scripts/config-token.ts) TERMSLACK_USER_TOKEN=$(bun scripts/user-token.ts) bun test tests/live",
+    "typecheck": "bun check"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.3.0",
+    "ink-testing-library": "^4.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  },
+  "dependencies": {
+    "@slack/socket-mode": "^3.1.1",
+    "@slack/web-api": "^8.3.0",
+    "emoji-datasource": "^16.0.0",
+    "ink": "^8.0.0",
+    "react": "^19.3.1",
+    "undici": "^8.12.3"
+  }
+}

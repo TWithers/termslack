@@ -1,0 +1,66 @@
+[
+  {
+    "ok": true,
+    "channels": [
+      {
+        "id": "C012AB3CD",
+        "name": "general",
+        "is_channel": true,
+        "is_group": false,
+        "is_im": false,
+        "is_mpim": false,
+        "is_private": false,
+        "created": 1503435939,
+        "is_archived": false,
+        "is_general": true,
+        "unlinked": 0,
+        "name_normalized": "general",
+        "is_shared": false,
+        "is_org_shared": false,
+        "is_pending_ext_shared": false,
+        "creator": "U123ABC456",
+        "topic": {
+          "value": "Company-wide announcements",
+          "creator": "",
+          "last_set": 0
+        },
+        "purpose": {
+          "value": "General chat",
+          "creator": "",
+          "last_set": 0
+        }
+      },
+      {
+        "id": "C061EG9T2",
+        "name": "random",
+        "is_channel": true,
+        "is_group": false,
+        "is_im": false,
+        "is_mpim": false,
+        "is_private": false,
+        "created": 1503435939,
+        "is_archived": false,
+        "is_general": false,
+        "unlinked": 0,
+        "name_normalized": "random",
+        "is_shared": false,
+        "is_org_shared": false,
+        "is_pending_ext_shared": false,
+        "creator": "U123ABC456",
+        "topic": {
+          "value": "Company-wide announcements",
+          "creator": "",
+          "last_set": 0
+        },
+        "purpose": {
+          "value": "General chat",
+          "creator": "",
+          "last_set": 0
+        }
+      }
+    ],
+    "response_metadata": {
+      "next_cursor": "dGVhbTpDMDYxRkE1UEI="
+    }
+  }
+]

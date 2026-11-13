@@ -1,0 +1,39 @@
+[
+  {
+    "ok": true,
+    "channels": [
+      {
+        "id": "G0AKFJBEU",
+        "name": "mpdm-user1--user2--user3-1",
+        "is_channel": false,
+        "is_group": true,
+        "is_im": false,
+        "is_mpim": true,
+        "is_private": true,
+        "created": 1520000000,
+        "is_archived": false,
+        "is_open": true,
+        "creator": "U123ABC456"
+      },
+      {
+        "id": "D0C0F7S8Y",
+        "created": 1498500348,
+        "is_im": true,
+        "is_org_shared": false,
+        "user": "U222222222",
+        "is_user_deleted": false
+      },
+      {
+        "id": "D0BSHH4AD",
+        "created": 1514797712,
+        "is_im": true,
+        "is_org_shared": false,
+        "user": "U333333333",
+        "is_user_deleted": false
+      }
+    ],
+    "response_metadata": {
+      "next_cursor": ""
+    }
+  }
+]

@@ -1,0 +1,69 @@
+[
+  {
+    "ok": true,
+    "messages": [
+      {
+        "type": "message",
+        "user": "U222222222",
+        "text": "What, you want to smell my shoes better?",
+        "ts": "1512104434.000490"
+      },
+      {
+        "type": "message",
+        "user": "U123ABC456",
+        "text": "<@U222222222> any plans for the weekend?",
+        "ts": "1512100000.000300",
+        "thread_ts": "1512100000.000300",
+        "reply_count": 2,
+        "reply_users_count": 1,
+        "latest_reply": "1512100200.000500",
+        "reply_users": [
+          "U222222222"
+        ],
+        "is_locked": false,
+        "subscribed": true
+      },
+      {
+        "type": "message",
+        "subtype": "bot_message",
+        "text": "Deploy finished",
+        "ts": "1512090000.000200",
+        "bot_id": "B123ABC456",
+        "username": "deploybot"
+      }
+    ],
+    "has_more": true,
+    "pin_count": 0,
+    "channel_actions_ts": null,
+    "channel_actions_count": 0,
+    "response_metadata": {
+      "next_cursor": "bmV4dF90czoxNTEyMDg1OTUwMDAwMjE2"
+    }
+  },
+  {
+    "ok": true,
+    "messages": [
+      {
+        "type": "message",
+        "user": "U123ABC456",
+        "text": "I find you punny and would like to smell your nose letter",
+        "ts": "1512085950.000216",
+        "edited": {
+          "user": "U123ABC456",
+          "ts": "1512086000.000000"
+        }
+      },
+      {
+        "type": "message",
+        "user": "U222222222",
+        "text": "first!",
+        "ts": "1512080000.000100"
+      }
+    ],
+    "has_more": false,
+    "pin_count": 0,
+    "response_metadata": {
+      "next_cursor": ""
+    }
+  }
+]

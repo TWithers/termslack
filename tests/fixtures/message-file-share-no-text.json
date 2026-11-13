@@ -1,0 +1,34 @@
+[
+  {
+    "token": "XXYYZZ",
+    "team_id": "T123ABC456",
+    "api_app_id": "A123ABC456",
+    "event": {
+      "type": "message",
+      "channel": "C123ABC456",
+      "channel_type": "channel",
+      "subtype": "file_share",
+      "user": "U222222222",
+      "text": "",
+      "ts": "1500000007.000100",
+      "files": [
+        {
+          "id": "F123ABC458",
+          "title": "Untitled photo",
+          "mimetype": "image/png"
+        }
+      ]
+    },
+    "type": "event_callback",
+    "authorizations": [
+      {
+        "team_id": "T123ABC456",
+        "user_id": "U123ABC456",
+        "is_bot": false,
+        "is_enterprise_install": false
+      }
+    ],
+    "event_id": "Ev123ABC456",
+    "event_time": 123456789
+  }
+]
