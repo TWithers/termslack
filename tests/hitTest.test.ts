@@ -108,21 +108,21 @@ test("a popup is checked first and gives the point relative to itself", () => {
   expect(hitTest(l, 10, 5)).toMatchObject({ area: "sidebar" });
 });
 
-test("the reaction prompt sits between the panes and the status bar", () => {
+test("the reaction prompt is a popup over the panes", () => {
   const l = layout({
     bodyHeight: 26,
     popup: {
       kind: "reaction",
-      frame: { top: 26, left: 0, width: 160, height: 3 },
+      frame: { top: 5, left: 52, width: 56, height: 4 },
     },
   });
 
-  expect(hitTest(l, 70, 27)).toEqual({
+  expect(hitTest(l, 70, 6)).toEqual({
     area: "popup",
     popup: "reaction",
-    column: 70,
+    column: 18,
     row: 1,
   });
   expect(hitTest(l, 70, 25)).toMatchObject({ area: "input" });
-  expect(hitTest(l, 70, 29)).toMatchObject({ area: "statusBar" });
+  expect(hitTest(l, 70, 9)).not.toMatchObject({ area: "popup" });
 });

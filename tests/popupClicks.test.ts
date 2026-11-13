@@ -215,9 +215,9 @@ describe("clicking outside a popup closes it and touches nothing under the click
   test("the reaction prompt, even over a message", async () => {
     await start();
     await app!.press("r");
-    await app!.waitForScreen("React with");
-    await app!.click(60, 5);
-    await waitFor(() => !app!.screen().includes("React with"));
+    await app!.waitForScreen("Add reaction");
+    await app!.click(60, 14);
+    await waitFor(() => !app!.screen().includes("Add reaction"));
 
     stillGeneralInMessages();
   });

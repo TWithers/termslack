@@ -21,8 +21,6 @@ import { ComposedPane } from "./ComposedPane";
 import type { MouseLayout } from "./hitTest";
 import type { MouseSource } from "./mouse";
 import { PopupOverlay } from "./PopupOverlay";
-import { ReactionPrompt } from "./ReactionPrompt";
-import { SectionPrompt } from "./SectionPrompt";
 import { handleSelectionKey } from "./paneKeys";
 import { pressed, shortcutKeys } from "./shortcuts";
 import { conversationRows, dayKey, isShown, olderStatusText } from "./paneRows";
@@ -924,18 +922,13 @@ export function App({
             height={bodyHeight}
           />
         ) : null}
-        <PopupOverlay popups={popups} columns={columns} height={bodyHeight} />
-      </Box>
-      {reactionPrompt.isOpen ? (
-        <ReactionPrompt
-          prompt={reactionPrompt}
+        <PopupOverlay
+          popups={popups}
           lookup={session}
-          width={columns}
+          columns={columns}
+          height={bodyHeight}
         />
-      ) : null}
-      {popups.sectionPrompt.isOpen ? (
-        <SectionPrompt prompt={popups.sectionPrompt} />
-      ) : null}
+      </Box>
       <StatusBar
         workspaceName={workspaceName}
         userName={user ?? userName ?? "…"}
@@ -948,14 +941,13 @@ export function App({
         message={statusMessage}
         prompt={actions.prompt ?? popups.prompt}
         hints={
-          popups.hints ??
-          (popups.isOpen
+          popups.isOpen
             ? undefined
             : focusedEdit
               ? editKeyHints
               : focus === "sidebar"
                 ? sidebarKeyHints(hideMuted)
-                : paneKeyHints[focus])
+                : paneKeyHints[focus]
         }
       />
     </Box>

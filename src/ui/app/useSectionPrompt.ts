@@ -11,8 +11,8 @@ export type SectionPrompt = {
   input: { text: string; cursor: number };
   /** Why the last Enter was refused; cleared by the next key. */
   refusal?: string;
-  /** Rows the prompt takes at the bottom of the screen; 0 while closed. */
-  height: number;
+  /** Rows inside the popup's border: the input and the line for the refusal. */
+  contentRows: number;
   open(channel: ChannelRef): void;
   close(): void;
   /** Handles a key while the prompt is open. */
@@ -22,7 +22,7 @@ export type SectionPrompt = {
 /**
  * The prompt "New section…" in the channel menu's Move to section list opens:
  * a one-line input for the new section's name. It reuses the input's text
- * model and key handling, and sits at the bottom like the reaction prompt.
+ * model and key handling, and is a small popup like the reaction prompt.
  * Enter creates the section after the user's others and moves the channel
  * in; an empty or repeated name is refused (`refusal` says why) and the
  * prompt stays open. Esc cancels, leaving nothing open.
@@ -65,7 +65,7 @@ export function useSectionPrompt({
     isOpen: channel !== undefined,
     input,
     refusal,
-    height: channel === undefined ? 0 : 1,
+    contentRows: 2,
 
     open(next) {
       setInput(emptyInput);

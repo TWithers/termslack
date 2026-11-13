@@ -508,10 +508,10 @@ test("Ctrl+K from the reaction prompt closes it and opens the switcher", async (
   await app.waitForScreen("hello there");
   await app.press(keys.tab);
   await app.press("r");
-  expect(app.screen()).toContain("React with");
+  expect(app.screen()).toContain("Add reaction");
 
   await app.press(keys.ctrlK);
 
   expect(switcherIsOpen()).toBe(true);
-  expect(app.screen()).not.toContain("React with");
+  expect(app.screen()).not.toContain("Add reaction");
 });

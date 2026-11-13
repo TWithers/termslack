@@ -4,7 +4,6 @@ import { emojiCompletions, reactionName } from "../../session/emoji";
 import type { CompletionEntry } from "../../session/mentions";
 import type { MessageRef } from "../../session/messageActions";
 import type { WorkspaceSession } from "../../session/workspaceSession";
-import { completionListChrome } from "../input/CompletionList";
 import { handleInputKey } from "../input/inputKeys";
 import { emptyInput, type InputState } from "../input/textInput";
 import { useChoice } from "../input/useChoice";
@@ -26,8 +25,8 @@ export type ReactionPrompt = {
   selected: number;
   /** What Enter would do; undefined while nothing usable is typed. */
   choice?: ReactionChoice;
-  /** Rows the prompt takes at the bottom of the screen; 0 while closed. */
-  height: number;
+  /** Rows inside the popup's border: the input, the matches, the line saying what Enter does. */
+  contentRows: number;
   open(target: MessageRef): void;
   close(): void;
   /** Handles a key while the prompt is open. */
@@ -36,7 +35,7 @@ export type ReactionPrompt = {
 
 /**
  * The prompt `r` opens: a one-line input for an emoji name with the
- * completion list above it. It reuses the input's text model and key
+ * completion rows under it. It reuses the input's text model and key
  * handling, and the completion list view, rather than being an input of its
  * own. Up/Down choose a match, Tab copies it into the input (to add a skin
  * tone, say), Enter reacts with the chosen match, or with exactly what was
@@ -94,10 +93,7 @@ export function useReactionPrompt({
     entries,
     selected,
     choice,
-    height:
-      target === undefined
-        ? 0
-        : 1 + (entries.length > 0 ? entries.length + completionListChrome : 0),
+    contentRows: 2 + entries.length,
 
     open(next) {
       setInput(emptyInput);

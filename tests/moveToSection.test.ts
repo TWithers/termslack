@@ -45,7 +45,9 @@ async function start(configured: SectionConfig[] = sections) {
 }
 
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
-const promptLine = () => app.screen().trimEnd().split("\n").at(-2)!;
+const bottomLine = () => app.screen().trimEnd().split("\n").at(-2)!;
+const sectionPopup = () => findPopup(app.screen(), "New section");
+const promptText = () => sectionPopup()?.rows.join("\n") ?? "";
 const sidebarRows = () =>
   app
     .screen()
@@ -197,13 +199,16 @@ test("New section asks for a name; Enter adds it after the others with the chann
   await app.press("n");
 
   expect(list()).toBeUndefined();
-  expect(promptLine()).toContain("New section: ");
-  expect(statusBar()).toContain("Enter create · Esc cancel");
+  expect(sectionPopup()).toBeDefined();
+  expect(sectionPopup()!.bottomBorder).toContain("Enter create");
+  expect(sectionPopup()!.bottomBorder).toContain("Esc cancel");
+  expect(bottomLine()).not.toContain("New section");
+  expect(statusBar()).not.toContain("Enter create");
 
   await app.press("Home Office");
   await app.press(keys.enter);
 
-  expect(promptLine()).not.toContain("New section: ");
+  expect(sectionPopup()).toBeUndefined();
   await waitForSidebar([
     "Work",
     "#random",
@@ -240,16 +245,16 @@ test("an empty name and a repeated one are refused with a reason, and the prompt
   await app.press("n");
   await app.press(keys.enter);
 
-  expect(promptLine()).toContain("A section needs a name");
+  expect(promptText()).toContain("A section needs a name");
   expect(app.session.sectionsKeptByTermslack()).toBe(false);
 
   await app.press("Play");
-  expect(promptLine()).not.toContain("needs a name");
+  expect(promptText()).not.toContain("needs a name");
 
   await app.press(keys.enter);
 
-  expect(promptLine()).toContain("There is already a section named Play");
-  expect(promptLine()).toContain("New section: Play");
+  expect(promptText()).toContain("There is already a section named Play");
+  expect(promptText()).toContain("> Play");
 
   await app.press("x");
   await app.press(keys.enter);
@@ -265,7 +270,7 @@ test("Esc cancels the name prompt and closes everything, changing nothing", asyn
   await app.press("abc");
   await app.press(keys.escape);
 
-  expect(promptLine()).not.toContain("New section: ");
+  expect(sectionPopup()).toBeUndefined();
   expect(app.screen()).not.toContain("Move to section");
   expect(app.session.sectionsKeptByTermslack()).toBe(false);
 
@@ -280,7 +285,7 @@ test("the prompt takes every key, such as q, and Ctrl+C still quits", async () =
   await app.press("n");
   await app.press("q");
 
-  expect(promptLine()).toContain("New section: q");
+  expect(promptText()).toContain("> q");
 });
 
 test("the first change from the menu shows the one-time note", async () => {
@@ -299,4 +304,30 @@ test("the menu lists Move to section with its letter", async () => {
   await app.press("m");
 
   expect(app.screen()).toContain("s Move to section…");
+});
+
+test("a click outside the name popup cancels it, changing nothing", async () => {
+  await start();
+
+  await openList("#general");
+  await app.press("n");
+  await app.press("abc");
+  await app.click(0, 0);
+
+  await waitFor(() => sectionPopup() === undefined);
+  expect(app.session.sectionsKeptByTermslack()).toBe(false);
+});
+
+test("a click inside the name popup leaves it open", async () => {
+  await start();
+
+  await openList("#general");
+  await app.press("n");
+  await app.press("abc");
+
+  const { left, top } = sectionPopup()!;
+
+  await app.click(left + 3, top + 1);
+
+  expect(promptText()).toContain("> abc");
 });

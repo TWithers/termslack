@@ -3,6 +3,7 @@ import { conversationRows } from "../src/ui/app/paneRows";
 import { theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
+import { findPopup } from "./support/popup";
 
 let app: AppHarness;
 
@@ -83,7 +84,9 @@ const calls = (method: string) =>
 
 const reactionsOf = (ts: string) => app.session.message(general, ts)?.reactions;
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
-const promptArea = () => app.screen().split("\n").slice(-12).join("\n");
+const popup = () => findPopup(app.screen(), "Add reaction");
+const promptArea = () => popup()?.rows.join("\n") ?? "";
+const bottomLine = () => app.screen().trimEnd().split("\n").at(-2)!;
 
 function echo(action: "added" | "removed", ts: string, name: string) {
   return app.sendEvents({
@@ -102,14 +105,18 @@ test("r opens a prompt that completes names, says it will add, and Enter adds th
   await app.press("k");
   await app.press("r");
 
-  expect(promptArea()).toContain("React with");
+  expect(popup()).toBeDefined();
+  expect(popup()!.rows[0]).toContain("> ");
+  expect(popup()!.bottomBorder).toContain("Tab complete");
+  expect(popup()!.bottomBorder).toContain("Esc cancel");
+  expect(bottomLine()).not.toContain("React with");
 
   await app.press("tad");
   await app.waitForScreen(":tada:");
 
   expect(promptArea()).toContain("🎉");
   expect(promptArea()).toContain("Enter adds :tada:");
-  expect(promptArea()).toContain("Esc cancels");
+  expect(popup()!.rows[0]).toContain("> tad");
 
   await app.press(keys.enter);
 
@@ -119,7 +126,7 @@ test("r opens a prompt that completes names, says it will add, and Enter adds th
     timestamp: theirsTs,
     name: "tada",
   });
-  expect(app.screen()).not.toContain("React with");
+  expect(popup()).toBeUndefined();
   expect(app.screen()).toContain("🎉\u00a02");
 
   await echo("added", theirsTs, "tada");
@@ -200,7 +207,7 @@ test("Esc cancels the prompt without calling Slack", async () => {
   await app.press("tad");
   await app.press(keys.escape);
 
-  expect(app.screen()).not.toContain("React with");
+  expect(popup()).toBeUndefined();
   expect(calls("reactions.add")).toHaveLength(0);
   expect(calls("reactions.remove")).toHaveLength(0);
 });
@@ -282,5 +289,28 @@ test("while the prompt is open its keys don't act on the list", async () => {
   await app.press("d");
 
   expect(statusBar()).not.toContain("Delete this message?");
-  expect(promptArea()).toContain("React with");
+  expect(popup()).toBeDefined();
+});
+
+test("a click outside the popup cancels it without calling Slack", async () => {
+  await start();
+  await app.press("r");
+  await app.press("tad");
+  await app.click(60, 2);
+
+  await waitFor(() => popup() === undefined);
+  expect(calls("reactions.add")).toHaveLength(0);
+});
+
+test("a click inside the popup leaves it open", async () => {
+  await start();
+  await app.press("r");
+  await app.press("tad");
+
+  const { left, top } = popup()!;
+
+  await app.click(left + 3, top + 1);
+
+  expect(popup()).toBeDefined();
+  expect(popup()!.rows[0]).toContain("> tad");
 });

@@ -12,8 +12,7 @@ import {
   overlayInnerWidth,
   selectableRowIndent,
 } from "./Overlay";
-import { reactionKeyHints } from "./ReactionPrompt";
-import { sectionKeyHints } from "./SectionPrompt";
+import { promptFrame } from "./PromptPopup";
 import { searchResultHeight } from "./SearchResults";
 import { pressed } from "./shortcuts";
 import type { SwitcherCandidate } from "./switcherRanking";
@@ -66,10 +65,7 @@ export function usePopups({
 }) {
   const reactionPrompt = useReactionPrompt({ session, report });
   const sectionPrompt = useSectionPrompt({ session });
-  const bodyHeight = Math.max(
-    0,
-    rows - 1 - reactionPrompt.height - sectionPrompt.height,
-  );
+  const bodyHeight = Math.max(0, rows - 1);
   const help = useHelp(
     overlayInnerHeight("large", columns, bodyHeight),
     overlayInnerWidth("large", columns, bodyHeight),
@@ -186,24 +182,14 @@ export function usePopups({
     if (reactionPrompt.isOpen) {
       return {
         kind: "reaction",
-        frame: {
-          top: bodyHeight,
-          left: 0,
-          width: columns,
-          height: reactionPrompt.height,
-        },
+        frame: promptFrame(columns, bodyHeight, reactionPrompt.contentRows),
       };
     }
 
     if (sectionPrompt.isOpen) {
       return {
         kind: "sectionName",
-        frame: {
-          top: bodyHeight,
-          left: 0,
-          width: columns,
-          height: sectionPrompt.height,
-        },
+        frame: promptFrame(columns, bodyHeight, sectionPrompt.contentRows),
       };
     }
 
@@ -350,14 +336,9 @@ export function usePopups({
       themePicker.isOpen ||
       channelMenu.isOpen ||
       channelDetails.isOpen ||
-      search.isOpen,
-
-    /** The key hints of the open prompt, which draws no border of its own yet; the popups with a border show theirs on it. */
-    hints: reactionPrompt.isOpen
-      ? reactionKeyHints
-      : sectionPrompt.isOpen
-        ? sectionKeyHints
-        : undefined,
+      search.isOpen ||
+      reactionPrompt.isOpen ||
+      sectionPrompt.isOpen,
 
     /** Opens the search, or says in the status bar why it can't be. */
     openSearch() {

@@ -31,6 +31,21 @@ export function CompletionList({
       backgroundColor={theme.popupBackground}
       paddingX={1}
     >
+      <CompletionRows entries={entries} selected={selected} />
+    </Box>
+  );
+}
+
+/** The entries alone, one per row with the chosen one highlighted, for a box that draws the border itself. */
+export function CompletionRows({
+  entries,
+  selected,
+}: {
+  entries: CompletionEntry[];
+  selected: number;
+}) {
+  return (
+    <>
       {entries.map((entry, row) => (
         <Text
           key={entry.slack}
@@ -53,6 +68,6 @@ export function CompletionList({
           ) : null}
         </Text>
       ))}
-    </Box>
+    </>
   );
 }

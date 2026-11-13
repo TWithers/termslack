@@ -1,26 +1,39 @@
 import { Text } from "../SafeText";
 import { theme } from "../theme";
-import { BottomPromptLine } from "./BottomPromptLine";
+import type { OverlayFrame } from "./Overlay";
+import { PromptPopup } from "./PromptPopup";
 import type { SectionPrompt as SectionPromptState } from "./useSectionPrompt";
 
-/** What the keys do while the prompt is open; also shown by the status bar. */
+/** What the keys do while the prompt is open, drawn on its bottom border. */
 export const sectionKeyHints = "Enter create · Esc cancel";
 
 /**
- * The new section's name prompt, drawn across the bottom above the status
- * bar: one line with what is typed, then why Enter was refused, if it was.
+ * The "New section" popup: the typed name, then why Enter was refused, if it
+ * was.
  */
-export function SectionPrompt({ prompt }: { prompt: SectionPromptState }) {
+export function SectionPrompt({
+  prompt,
+  frame,
+}: {
+  prompt: SectionPromptState;
+  frame: OverlayFrame;
+}) {
   const { input, refusal } = prompt;
 
   return (
-    <BottomPromptLine title="New section: " input={input}>
+    <PromptPopup
+      frame={frame}
+      title="New section"
+      keys={sectionKeyHints}
+      input={input}
+    >
       {refusal ? (
-        <Text color={theme.error}>{`  ${refusal}`}</Text>
+        <Text wrap="truncate" color={theme.error}>
+          {refusal}
+        </Text>
       ) : (
-        <Text color={theme.secondaryText}>{"  Enter creates"}</Text>
+        <Text color={theme.secondaryText}>{"name the section"}</Text>
       )}
-      <Text color={theme.secondaryText}>{"  · Esc cancels"}</Text>
-    </BottomPromptLine>
+    </PromptPopup>
   );
 }

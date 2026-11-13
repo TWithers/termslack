@@ -155,7 +155,7 @@ test("keys go only to the help while it is open", async () => {
 
   expect(statusBar()).not.toContain("Delete this message?");
   expect(statusBar()).toContain("r react");
-  expect(app.screen()).not.toContain("React with");
+  expect(app.screen()).not.toContain("Add reaction");
 });
 
 test("Ctrl+C still quits while the help is open", async () => {
