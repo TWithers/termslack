@@ -108,6 +108,9 @@ export async function runApp(
     ...streams,
     stdin,
     alternateScreen: true,
+    // Ink treats any environment with CI set as non-interactive and draws only
+    // the last frame; termslack is interactive whenever it has a terminal.
+    interactive: (stdout as { isTTY?: boolean }).isTTY === true,
     exitOnCtrlC: false,
     ...(kittyKeyboard ? { kittyKeyboard: { mode: "auto" as const } } : {}),
   });
