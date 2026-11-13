@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- README is now short; details moved to docs/guide.md and CONTRIBUTING.md.
+
 ### Fixed
 
 - On macOS, startup no longer shows the Keychain password prompt many times: each workspace's credentials are read once per run and written only when they change.

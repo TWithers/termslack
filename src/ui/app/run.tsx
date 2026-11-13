@@ -92,7 +92,7 @@ export async function runApp(
   if (themeName !== undefined && !applyTheme(themeName)) {
     applyTheme(defaultThemeName);
     notice.set(
-      `Unknown theme "${themeName}", using ${defaultThemeName}. See the README for the names.`,
+      `Unknown theme "${themeName}", using ${defaultThemeName}. See docs/guide.md for the names.`,
     );
   }
 
