@@ -108,15 +108,16 @@ test("read conversations are dimmed, unread are bold bright white with no dot, m
     color: theme.brightText,
   });
   expect(badgeOf("#general")).toMatchObject({ text: " 2 ", bold: true });
-  await app.waitForScreen("#general");
-  expect(sidebarLineWith("#general")).toMatch(/^[› ][▌ ] #general +2$/);
-  expect(
+  const drawnGeneralRow = () =>
     app
       .screen()
       .split("\n")
       .find((line) => line.includes("#general"))
-      ?.slice(0, 32),
-  ).toEndWith(" 2 ");
+      ?.slice(0, 32);
+
+  await waitFor(() => drawnGeneralRow()?.endsWith(" 2 ") === true);
+  expect(sidebarLineWith("#general")).toMatch(/^[› ][▌ ] #general +2$/);
+  expect(drawnGeneralRow()).toEndWith(" 2 ");
 });
 
 test("selected and open markers stay legible in every state", async () => {
