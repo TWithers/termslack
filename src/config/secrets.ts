@@ -81,23 +81,79 @@ async function resolveBackend(): Promise<SecretsBackend> {
   return backend;
 }
 
-export async function loadSecrets(teamId: string): Promise<WorkspaceSecrets> {
+type CachedSecrets = {
+  secrets: WorkspaceSecrets;
+  stored: string;
+};
+
+/**
+ * Every Keychain read can prompt the user (an unsigned binary has a new
+ * identity on each build), so a workspace's secrets are read at most once per
+ * process and writes happen only when the stored value would change.
+ */
+const cache = new Map<string, Promise<CachedSecrets>>();
+
+async function readFromBackend(teamId: string): Promise<CachedSecrets> {
   const raw = await (await resolveBackend()).get(teamId);
 
-  return raw ? (JSON.parse(raw) as WorkspaceSecrets) : {};
+  return {
+    secrets: raw ? (JSON.parse(raw) as WorkspaceSecrets) : {},
+    stored: raw ?? "{}",
+  };
+}
+
+function cached(teamId: string): Promise<CachedSecrets> {
+  const existing = cache.get(teamId);
+
+  if (existing) {
+    return existing;
+  }
+
+  const reading = readFromBackend(teamId);
+
+  cache.set(teamId, reading);
+
+  reading.catch(() => cache.delete(teamId));
+
+  return reading;
+}
+
+export async function loadSecrets(teamId: string): Promise<WorkspaceSecrets> {
+  return { ...(await cached(teamId)).secrets };
 }
 
 export async function updateSecrets(
   teamId: string,
   changes: WorkspaceSecrets,
 ): Promise<WorkspaceSecrets> {
-  const secrets = { ...(await loadSecrets(teamId)), ...changes };
+  const current = await cached(teamId);
+  const secrets = { ...current.secrets, ...changes };
+  const serialised = JSON.stringify(secrets);
 
-  await (await resolveBackend()).set(teamId, JSON.stringify(secrets));
+  if (serialised !== current.stored) {
+    await (await resolveBackend()).set(teamId, serialised);
+  }
 
-  return secrets;
+  const roundTripped = JSON.parse(serialised) as WorkspaceSecrets;
+
+  cache.set(
+    teamId,
+    Promise.resolve({ secrets: roundTripped, stored: serialised }),
+  );
+
+  return { ...roundTripped };
 }
 
 export async function deleteSecrets(teamId: string): Promise<void> {
   await (await resolveBackend()).delete(teamId);
+
+  cache.delete(teamId);
 }
+
+/** Test-only: swap the backend (or restore the default) and forget cached secrets. */
+export function resetSecretsForTests(replacement?: SecretsBackend): void {
+  backend = replacement;
+  cache.clear();
+}
+
+export type { SecretsBackend };

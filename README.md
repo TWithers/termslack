@@ -44,7 +44,7 @@ termslack --version
 
 The binaries are not signed or notarised. A binary downloaded in a browser is quarantined by macOS and refused at first; allow it under System Settings, Privacy & Security (scroll down to the message about `termslack` and choose "Allow Anyway"), or remove the quarantine flag yourself with `xattr -d com.apple.quarantine termslack`. Installing with Homebrew (or downloading with `curl`) doesn't set the flag.
 
-termslack keeps your Slack tokens in the macOS Keychain. After an upgrade the binary is a new, differently signed program, so macOS may ask again whether it may use those Keychain entries; choose "Always Allow".
+termslack keeps your Slack tokens in the macOS Keychain. macOS asks for Keychain access when termslack first reads its credentials and again after each upgrade, because the binary is a new, differently signed program. Choose "Always Allow" so it doesn't ask again for that version.
 
 ### Build from source
 
