@@ -1,5 +1,7 @@
 import { Box } from "ink";
 import { theme } from "../theme";
+import { TitledBox } from "../TitledBox";
+import { insideBorder, sidebarListHeight } from "./paneLayout";
 import { RunsText } from "./RunsText";
 import {
   headingRow,
@@ -10,14 +12,17 @@ import {
 } from "./sidebarEntries";
 
 /**
- * The conversation list, in a box of exactly `width` by `height` cells,
- * drawing `lines` from `start`. The selected line (an entry or a section heading) is highlighted (in the theme's selection colours while the sidebar has focus, a quieter background when not) and marked
+ * The conversation list, in a titled box (the workspace's name on the top
+ * border) of exactly `width` by `height` cells, border included, drawing
+ * `lines` from `start` in the rows inside the border, each as wide as the
+ * inside. The selected line (an entry or a section heading) is highlighted (in the theme's selection colours while the sidebar has focus, a quieter background when not) and marked
  * `›`; the one under the mouse pointer has the hover background; the open one is bold and marked `▌`. Read conversations are in secondary text,
  * ones with new messages bold bright, and ones that mention the user
  * add a red count badge at the right edge (see `sidebarRow`); the name is cut
  * short before the badge is.
  */
 export function Sidebar({
+  workspaceName,
   lines,
   start,
   selectedId,
@@ -27,6 +32,7 @@ export function Sidebar({
   height,
   focused,
 }: {
+  workspaceName: string;
   lines: SidebarLine[];
   start: number;
   selectedId?: string;
@@ -37,47 +43,56 @@ export function Sidebar({
   height: number;
   focused: boolean;
 }) {
-  const shown = visibleSidebarLines(lines, start, height);
+  const shown = visibleSidebarLines(lines, start, sidebarListHeight(height));
+  const rowWidth = insideBorder(width);
+  const color = focused ? theme.focus : theme.border;
 
   return (
-    <Box
-      flexDirection="column"
+    <TitledBox
       width={width}
       height={height}
-      flexShrink={0}
-      overflow="hidden"
-      backgroundColor={theme.sidebarBackground}
+      borderColor={color}
+      background={theme.sidebarBackground}
+      frame={{ flexShrink: 0 }}
+      labels={{ topLeft: { text: workspaceName, color, bold: true } }}
     >
-      {shown.map((line) => {
-        if (line.kind === "heading") {
+      <Box
+        flexDirection="column"
+        width={rowWidth}
+        height={sidebarListHeight(height)}
+        overflow="hidden"
+      >
+        {shown.map((line) => {
+          if (line.kind === "heading") {
+            return (
+              <RunsText
+                key={lineKey(line)}
+                runs={headingRow(line, {
+                  selected: lineKey(line) === selectedId,
+                  hovered: lineKey(line) === hoveredId,
+                  focused,
+                  width: rowWidth,
+                })}
+              />
+            );
+          }
+
+          const { conversation } = line.entry;
+
           return (
             <RunsText
-              key={lineKey(line)}
-              runs={headingRow(line, {
-                selected: lineKey(line) === selectedId,
-                hovered: lineKey(line) === hoveredId,
+              key={conversation.id}
+              runs={sidebarRow(line.entry, {
+                selected: conversation.id === selectedId,
+                open: conversation.id === openId,
+                hovered: conversation.id === hoveredId,
                 focused,
-                width,
+                width: rowWidth,
               })}
             />
           );
-        }
-
-        const { conversation } = line.entry;
-
-        return (
-          <RunsText
-            key={conversation.id}
-            runs={sidebarRow(line.entry, {
-              selected: conversation.id === selectedId,
-              open: conversation.id === openId,
-              hovered: conversation.id === hoveredId,
-              focused,
-              width,
-            })}
-          />
-        );
-      })}
-    </Box>
+        })}
+      </Box>
+    </TitledBox>
   );
 }

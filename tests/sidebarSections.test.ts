@@ -10,6 +10,7 @@ import {
 import { waitFor } from "./support/fakeSlack";
 import { loadPayload } from "./support/fixtures";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -42,10 +43,7 @@ async function start(options: Parameters<typeof startAppHarness>[0] = {}) {
 }
 
 const sidebar = (): string[] =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).trimEnd());
+  sidebarRows(app.screen(), 32).map((line) => line.trimEnd());
 
 /** The sidebar's rows without the 3-cell marker prefix, blank rows dropped. */
 const names = (): string[] =>

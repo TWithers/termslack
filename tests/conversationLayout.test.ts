@@ -69,7 +69,7 @@ const paneLines = () =>
   app
     .screen()
     .split("\n")
-    .map((line) => line.slice(32).trimEnd());
+    .map((line) => line.slice(33).replace(/ *│$/, ""));
 
 /** How many lines are exactly `text`, as an author header or a separator is. */
 const count = (text: string | RegExp) =>

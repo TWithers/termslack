@@ -259,8 +259,9 @@ test("the help is a large popup, centred over the panes, which stay where they w
     expect(outside(after[index] ?? "")).toBe(outside(line));
   }
 
-  expect(after[0]).toContain("Channels");
-  expect(after.join("\n")).toContain("my words");
+  expect(after[1]).toContain("Channels");
+  expect(before.join("\n")).toContain("my words");
+  expect(popup.rows.join("\n")).not.toContain("my words");
 });
 
 test("nothing from the panes shows through the help popup", async () => {

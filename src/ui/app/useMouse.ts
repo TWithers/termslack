@@ -5,6 +5,7 @@ import type { Composer } from "../input/useComposer";
 import type { useDrafts } from "../input/useDrafts";
 import type { Focus, InputPane } from "./focus";
 import { hitTest, type MouseLayout } from "./hitTest";
+import { borderSize, paneInnerHeight, sidebarListHeight } from "./paneLayout";
 import type { MouseInput, MouseSource } from "./mouse";
 import { visibleRowAt } from "./selection";
 import { lineKey, sidebarLineAt, type SidebarLine } from "./sidebarEntries";
@@ -60,7 +61,7 @@ export function useMouse({
   openConversation(id: string, options: { remember: boolean }): void;
   openThreadOf(ts: string): void;
 }): { hoveredLine: SidebarLine | undefined } {
-  /** The sidebar's screen row under the mouse pointer, if one with something on it is. */
+  /** The sidebar's row (counted inside its border) under the mouse pointer, if one with something on it is. */
   const [hoveredRow, setHoveredRow] = useState<number>();
   const pendingWheel = useRef<
     { column: number; row: number; delta: number } | undefined
@@ -94,7 +95,7 @@ export function useMouse({
     const line = sidebarLineAt(
       sidebar.lines,
       sidebar.scrollStart,
-      layout.bodyHeight,
+      sidebarListHeight(layout.bodyHeight),
       row,
     );
 
@@ -136,7 +137,7 @@ export function useMouse({
     const line = sidebarLineAt(
       sidebar.lines,
       sidebar.scrollStart,
-      layout.bodyHeight,
+      sidebarListHeight(layout.bodyHeight),
       hit.row,
     );
 
@@ -148,7 +149,7 @@ export function useMouse({
     sidebar.select(lineKey(line));
     sidebar.openChannelMenu(
       { id: line.entry.conversation.id, label: line.entry.label },
-      hit.row,
+      hit.row + borderSize,
     );
   }
 
@@ -162,7 +163,7 @@ export function useMouse({
 
     const selection = panes[pane];
     const listHeight =
-      layout.bodyHeight -
+      paneInnerHeight(layout.bodyHeight) -
       (pane === "thread"
         ? layout.threadInputHeight
         : layout.messageInputHeight);
@@ -325,7 +326,7 @@ export function useMouse({
       sidebarLineAt(
         sidebar.lines,
         sidebar.scrollStart,
-        layout.bodyHeight,
+        sidebarListHeight(layout.bodyHeight),
         hit.row,
       ) !== undefined;
 
@@ -358,7 +359,7 @@ export function useMouse({
         : sidebarLineAt(
             sidebar.lines,
             sidebar.scrollStart,
-            layout.bodyHeight,
+            sidebarListHeight(layout.bodyHeight),
             hoveredRow,
           ),
   };

@@ -9,6 +9,7 @@ import {
 import { switcherCandidates } from "../src/ui/app/switcherCandidates";
 import { theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 import { type FakeClock, fakeClock } from "./support/fakeClock";
 import { loadFixture, loadPayload } from "./support/fixtures";
@@ -98,13 +99,10 @@ function say(channel: string, overrides: Record<string, unknown> = {}) {
 }
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, sidebarWidth).trim());
+  readSidebarRows(app.screen(), sidebarWidth).map((line) => line.trim());
 const rowOf = (name: string) =>
   sidebarRows().findIndex((row) => row.includes(name));
-const colouredRow = (name: string) => app.coloredScreen()[rowOf(name)]!;
+const colouredRow = (name: string) => app.coloredScreen()[rowOf(name) + 1]!;
 const foreground = (colour: string) => {
   const [red, green, blue] = [1, 3, 5].map((at) =>
     Number.parseInt(colour.slice(at, at + 2), 16),

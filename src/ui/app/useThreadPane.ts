@@ -4,7 +4,7 @@ import { type Composer, useComposer } from "../input/useComposer";
 import { draftKey, type useDrafts } from "../input/useDrafts";
 import { errorMessage } from "../../session/failureText";
 import type { WorkspaceSession } from "../../session/workspaceSession";
-import { type PaneWidths, paneWidths } from "./paneLayout";
+import { type PaneWidths, paneContentWidth, paneWidths } from "./paneLayout";
 import { type PaneRow, threadRows, type ThreadStatus } from "./paneRows";
 import { type PaneSelection, usePaneSelection } from "./usePaneSelection";
 
@@ -65,7 +65,7 @@ export function useThreadPane({
   version: number;
   /** The width of the area beside the sidebar. */
   areaWidth: number;
-  /** Lines the selection scrolls over: the pane less its title. */
+  /** Rows the pane's list and input share: the pane inside its border. */
   height: number;
   now: () => Date;
   /** The day key of `now`, so day labels refresh at midnight. */
@@ -84,7 +84,7 @@ export function useThreadPane({
   const [alsoToChannel, setAlsoToChannel] = useState(false);
   const generation = useRef(0);
   const widths = paneWidths(areaWidth, target !== undefined);
-  const width = Math.max(1, widths.thread - 1);
+  const width = Math.max(1, paneContentWidth(widths.thread));
 
   const rows = useMemo(
     () =>
@@ -106,8 +106,8 @@ export function useThreadPane({
     place:
       target && (editPlace ?? draftKey(target.conversationId, target.threadTs)),
     session,
-    width: widths.thread,
-    availableHeight: height + 1,
+    width,
+    availableHeight: height,
     focused: inputFocused && target !== undefined,
     noticeLines: alsoToChannel || editPlace !== undefined ? 1 : 0,
   });

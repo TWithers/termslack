@@ -109,7 +109,7 @@ const rowOf = (text: string, fromColumn = sidebarWidth) =>
 /** Which message numbers carry the selection bar (only a focused list draws it). */
 const selected = () =>
   screenRows().flatMap((line) => {
-    const match = line.slice(sidebarWidth).match(/^ ▌ .*msg (\d{4})/);
+    const match = line.slice(sidebarWidth).match(/^│ ▌ .*msg (\d{4})/);
 
     return match ? [Number(match[1])] : [];
   });
@@ -306,7 +306,7 @@ describe("popups", () => {
 
   test("the wheel does nothing while a y/n question is showing, and doesn't cancel it", async () => {
     await start();
-    await app!.click(5, 1);
+    await app!.click(5, 2);
     await app!.press("x");
     await app!.waitForScreen("Leave #general? y/n");
 
@@ -316,7 +316,7 @@ describe("popups", () => {
     expect(statusBar()).toContain("Leave #general? y/n");
 
     await app!.press("n");
-    expect(screenRows()[1]).toContain("›");
+    expect(screenRows()[2]).toContain("›");
 
     await app!.press(keys.tab);
     expect(selected()).toEqual([40]);

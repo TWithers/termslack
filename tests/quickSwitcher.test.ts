@@ -66,7 +66,7 @@ async function start(options: Parameters<typeof startAppHarness>[0] = {}) {
       options.prepare?.(slack);
     },
   });
-  await app.waitForScreen("@Peter Venkman");
+  await app.waitForScreen("@Peter");
   await waitFor(() => app.session.conversations().length === 7);
 }
 
@@ -372,7 +372,7 @@ test("choosing a DM the recent-DMs filter hides shows it in the sidebar", async 
     app
       .screen()
       .split("\n")
-      .some((line) => line.slice(0, 32).includes(`▌ ${hidden}`)),
+      .some((line) => line.slice(1, 31).includes(`▌ ${hidden}`)),
   ).toBe(true);
 });
 
@@ -416,7 +416,7 @@ test("the switcher is a compact popup near the top over the panes, which stay wh
     }
   }
 
-  expect(after[0]).toContain("Channels");
+  expect(after[1]).toContain("Channels");
 });
 
 test("nothing from the panes shows through the switcher popup, even on its empty rows", async () => {

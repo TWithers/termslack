@@ -4,6 +4,7 @@ import { loadPayload } from "./support/fixtures";
 import { waitFor } from "./support/fakeSlack";
 import { resolveSelection } from "../src/ui/app/sidebarEntries";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -55,10 +56,7 @@ async function start(options: Parameters<typeof startAppHarness>[0] = {}) {
 }
 
 const sidebarLines = (): string[] =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).trimEnd());
+  sidebarRows(app.screen(), 32).map((line) => line.trimEnd());
 
 const dmHeading = () =>
   sidebarLines()

@@ -55,11 +55,13 @@ function inputLines(): string[] {
     .split("\n")
     .map((line) => line.slice(32));
   const top = lines.findLastIndex((line) => line.includes("╭"));
-  const bottom = lines.findLastIndex((line) => line.includes("╰"));
+  const bottom = lines.findLastIndex(
+    (line) => line.includes("╰") && !line.startsWith("╰"),
+  );
 
   return lines
     .slice(top + 1, bottom)
-    .map((line) => line.replace(/[│\s]+$/, "").replace(/^\s*│\s?/, ""));
+    .map((line) => line.replace(/[│\s]+$/, "").replace(/^│ │ ?/, ""));
 }
 
 const statusLine = () => app.screen().split("\n").at(-1) ?? "";

@@ -96,11 +96,13 @@ function threadInputLines(): string[] {
     .split("\n")
     .map((line) => line.slice(96));
   const top = lines.findLastIndex((line) => line.includes("╭"));
-  const bottom = lines.findLastIndex((line) => line.includes("╰"));
+  const bottom = lines.findLastIndex(
+    (line) => line.includes("╰") && !line.startsWith("╰"),
+  );
 
   return lines
     .slice(top + 1, bottom)
-    .map((line) => line.replace(/[│\s]+$/, "").replace(/^\s*│\s?/, ""));
+    .map((line) => line.replace(/[│\s]+$/, "").replace(/^│ │ ?/, ""));
 }
 
 test("i in the thread pane jumps to the thread input; Esc goes back to the thread, Esc again closes it", async () => {

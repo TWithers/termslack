@@ -1,21 +1,24 @@
 import { Box } from "ink";
-import type { Presence } from "../../session/events";
 import { ComposerView } from "../input/ComposerView";
 import type { Composer } from "../input/useComposer";
 import { theme } from "../theme";
+import { TitledBox, type TitledLabel } from "../TitledBox";
 import { MessagePane } from "./MessagePane";
+import { insideBorder, paneContentWidth, panePadding } from "./paneLayout";
 import { withSelection } from "./selection";
 import type { PaneSelection } from "./usePaneSelection";
 
 /**
- * A list of messages with the input under it: the conversation's, or the
- * thread's. `height` is the whole column; the list takes what the input
- * leaves.
+ * A titled box holding a list of messages with the input under it: the
+ * conversation's, or the thread's. `width` and `height` are the whole box,
+ * border included; inside it the content has one column of padding on each
+ * side, and the list takes the rows the input leaves.
  */
 export function ComposedPane({
   title,
-  presence,
+  meta,
   status,
+  focused,
   selection,
   listFocused,
   composer,
@@ -26,11 +29,14 @@ export function ComposedPane({
   width,
   height,
 }: {
+  /** On the top border, left. */
   title: string;
-  /** Whether the person of an open DM is active or away, drawn before the title. */
-  presence?: Presence;
-  /** Shown beside the title, e.g. while older messages load. */
+  /** On the top border, right: the member count, the person's presence, the reply count. */
+  meta?: { text: TitledLabel["text"]; color: string };
+  /** A line about fetching older messages or new messages below, on the bottom border, left (05 gives that border to the status line). */
   status?: { text: string; color?: string };
+  /** Whether the pane or its input has focus: the border and title take the focus colour. */
+  focused: boolean;
   selection: PaneSelection;
   listFocused: boolean;
   composer: Composer;
@@ -42,35 +48,55 @@ export function ComposedPane({
   width: number;
   height: number;
 }) {
+  const note =
+    status ??
+    (selection.hasNewBelow
+      ? { text: "↓ new messages below", color: theme.newMessages }
+      : undefined);
+  const color = focused ? theme.focus : theme.border;
+  const contentWidth = paneContentWidth(width);
+  const innerHeight = insideBorder(height);
+
   return (
-    <Box
-      flexDirection="column"
+    <TitledBox
       width={width}
-      flexShrink={0}
-      backgroundColor={theme.paneBackground}
+      height={height}
+      borderColor={color}
+      background={theme.paneBackground}
+      frame={{ flexShrink: 0 }}
+      labels={{
+        topLeft: { text: title, color, bold: true },
+        topRight: meta,
+        bottomLeft: note
+          ? { text: note.text, color: note.color ?? theme.secondaryText }
+          : undefined,
+      }}
     >
-      <MessagePane
-        title={title}
-        presence={presence}
-        focused={listFocused}
-        hasNewBelow={selection.hasNewBelow}
-        status={status}
-        rows={
-          listFocused
-            ? withSelection(selection.visible, selection.selectedTs)
-            : selection.visible
-        }
-        width={width}
-        height={Math.max(0, height - composer.height)}
-      />
-      <ComposerView
-        composer={composer}
-        focused={inputFocused}
-        placeholder={placeholder}
-        disabledReason={disabledReason}
-        width={width}
-        notice={notice}
-      />
-    </Box>
+      <Box
+        flexDirection="column"
+        width={insideBorder(width)}
+        height={innerHeight}
+        paddingX={panePadding}
+        overflow="hidden"
+      >
+        <MessagePane
+          rows={
+            listFocused
+              ? withSelection(selection.visible, selection.selectedTs)
+              : selection.visible
+          }
+          width={contentWidth}
+          height={Math.max(0, innerHeight - composer.height)}
+        />
+        <ComposerView
+          composer={composer}
+          focused={inputFocused}
+          placeholder={placeholder}
+          disabledReason={disabledReason}
+          width={contentWidth}
+          notice={notice}
+        />
+      </Box>
+    </TitledBox>
   );
 }

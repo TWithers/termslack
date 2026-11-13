@@ -45,7 +45,7 @@ const pane = () =>
     .screen()
     .replaceAll(" ", " ")
     .split("\n")
-    .map((line) => line.slice(32).trimEnd());
+    .map((line) => line.slice(33).replace(/ *│$/, ""));
 
 const screenText = () => app.screen().replaceAll("\u00a0", " ");
 

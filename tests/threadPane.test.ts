@@ -1,6 +1,14 @@
 import { afterEach, expect, test } from "bun:test";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { theme } from "../src/ui/theme";
+import {
+  foregroundAt,
+  foregroundCode,
+  useTerminalColour,
+} from "./support/colours";
 import { loadPayload } from "./support/fixtures";
+
+useTerminalColour();
 
 let app: AppHarness;
 
@@ -109,18 +117,15 @@ const threadLines = () =>
 const text = (lines: string[]) => lines.join("\n");
 
 const barred = (lines: string[]) =>
-  lines.slice(1).filter((line) => line[1] === "▌");
+  lines.slice(1).filter((line) => line[2] === "▌");
 
-/** Which pane titles carry the focus marker. */
+/** Which box titles are drawn in the focus colour: a pane stays focused while its input has focus. */
 function focusedTitles(): string[] {
-  return app
-    .screen()
-    .split("\n")
-    .flatMap((line) => {
-      const match = line.slice(32).match(/▌ (#general|Thread|Direct|Channels)/);
+  const row = app.coloredScreen()[0]!;
 
-      return match ? [match[1]!] : [];
-    });
+  return ["Acme", "#general", "Thread"].filter(
+    (title) => foregroundAt(row, ` ${title} `) === foregroundCode(theme.focus),
+  );
 }
 
 async function sendLive(overrides: Raw) {
@@ -145,7 +150,8 @@ test("Enter on a message with replies opens its thread beside the conversation, 
   expect(shown.indexOf("parent text")).toBeLessThan(shown.indexOf("reply 1"));
   expect(shown.indexOf("reply 1")).toBeLessThan(shown.indexOf("reply 3"));
   expect(shown).toContain("reply 2");
-  expect(shown).not.toContain("3 replies");
+  expect(lines[0]).toContain("3 replies");
+  expect(text(lines.slice(1))).not.toContain("3 replies");
   expect(text(messageLines())).toContain("plain text");
   expect(text(messageLines())).toContain("3 replies");
   expect(
@@ -222,11 +228,11 @@ test("Tab cycles sidebar, messages, input, thread, thread input; Esc closes the 
   expect(focusedTitles()).toEqual(["Thread"]);
 
   await app.press(keys.tab);
-  expect(focusedTitles()).toEqual([]);
+  expect(focusedTitles()).toEqual(["Thread"]);
   expect(app.screen()).toContain("Ctrl+T also send to channel");
 
   await app.press(keys.tab);
-  expect(focusedTitles()).toEqual([]);
+  expect(focusedTitles()).toEqual(["Acme"]);
   expect(app.screen()).not.toContain("Esc close thread");
 
   await app.press(keys.tab);
@@ -290,7 +296,11 @@ test("on a narrow terminal the thread takes the conversation's place", async () 
 });
 
 test("a thread that fails to load says why", async () => {
-  await start({ replies: () => ({ ok: false, error: "thread_not_found" }) });
+  // The error line is cut at the pane's width, so this terminal is wide enough for all of it.
+  await start({
+    columns: 170,
+    replies: () => ({ ok: false, error: "thread_not_found" }),
+  });
   await openThread();
   await app.waitForScreen("thread_not_found");
 

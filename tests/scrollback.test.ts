@@ -2,6 +2,14 @@ import { afterEach, expect, test } from "bun:test";
 import { loadPayload } from "./support/fixtures";
 import { waitFor } from "./support/fakeSlack";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import {
+  foregroundAt,
+  foregroundCode,
+  useTerminalColour,
+} from "./support/colours";
+import { theme } from "../src/ui/theme";
+
+useTerminalColour();
 
 let app: AppHarness;
 
@@ -46,7 +54,7 @@ function historyPages(
   return pages;
 }
 
-/** 15 rows: a 14-row body, a title, a 10-line message window and a 3-row input box. */
+/** 16 rows: a 15-row body, a 13-row box inside its border, a 10-line message window and a 3-row input box. */
 async function start(
   count: number,
   options: Parameters<typeof startAppHarness>[0] = {},
@@ -54,7 +62,7 @@ async function start(
 ) {
   app = await startAppHarness({
     columns: 100,
-    rows: 15,
+    rows: 16,
     ...options,
     prepare: (slack) => {
       slack.respondPaged("conversations.history", pages);
@@ -67,8 +75,19 @@ async function start(
 const lines = () => app.screen().split("\n");
 
 /** The message pane's part of each line (the sidebar is 32 columns of 100). */
-const paneLines = () => lines().map((line) => line.slice(32));
-const paneTitle = () => paneLines()[0]!;
+const paneLines = () =>
+  lines().map((line) => line.slice(33).replace(/ *│$/, ""));
+
+/** The boxes' bottom border row, where "new messages below" is shown. */
+const bottomBorder = () => lines().find((line) => line.startsWith("╰")) ?? "";
+
+/** Whether the message pane's box is drawn in the focus colour, read from its title on the top border. */
+const paneFocused = () =>
+  app
+    .coloredScreen()
+    .some(
+      (row) => foregroundAt(row, " #general ") === foregroundCode(theme.focus),
+    );
 const num = (n: number) => `msg ${String(n).padStart(4, "0")}`;
 
 /** The numbers of the messages on screen, top to bottom. */
@@ -105,17 +124,20 @@ async function sendLive(n: number, overrides: Record<string, unknown> = {}) {
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-test("Tab moves focus between the sidebar and the message pane, and the focused pane is marked", async () => {
+test("Tab moves focus between the sidebar and the message pane, and the focused pane is drawn in the focus colour", async () => {
   await start(30);
   await openGeneral();
 
-  expect(paneTitle()).not.toContain("▌");
+  expect(paneFocused()).toBe(false);
 
   await app.press(keys.tab);
-  expect(paneTitle()).toContain("▌");
+  expect(paneFocused()).toBe(true);
 
   await app.press(keys.tab);
-  expect(paneTitle()).not.toContain("▌");
+  expect(paneFocused()).toBe(true);
+
+  await app.press(keys.tab);
+  expect(paneFocused()).toBe(false);
 });
 
 test("with the message pane focused the sidebar keys don't move the selection, and back in the sidebar they do", async () => {
@@ -208,7 +230,7 @@ test("a message taller than the view scrolls line by line", async () => {
 
   await start(
     5,
-    { columns: 50, rows: 11 },
+    { columns: 50, rows: 12 },
     historyPages(5, 50, (n) => (n === 5 ? long : undefined)),
   );
   await app.press(keys.enter);
@@ -216,13 +238,13 @@ test("a message taller than the view scrolls line by line", async () => {
   await app.press(keys.tab);
 
   expect(app.screen()).not.toContain("w0 ");
-  expect(lines()).toHaveLength(11);
+  expect(lines()).toHaveLength(12);
 
   for (const line of lines()) {
     expect(Bun.stringWidth(line)).toBeLessThanOrEqual(50);
   }
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 11; i++) {
     await app.press("k");
   }
 
@@ -295,6 +317,7 @@ test("a failed older page says so and scrolling up again retries", async () => {
   const pages = historyPages(120);
 
   await start(120, {
+    columns: 120,
     prepare: (slack) =>
       slack.respond("conversations.history", (call) => {
         const cursor = call.params.cursor;
@@ -332,7 +355,7 @@ test("while scrolled up new messages don't move the view, and a hint says they'r
   await app.press("k");
   await app.press("k");
 
-  expect(paneTitle()).not.toMatch(/new messages below/i);
+  expect(bottomBorder()).not.toMatch(/new messages below/i);
 
   await sendLive(31);
   await app.waitForScreen("new messages below");
@@ -343,7 +366,7 @@ test("while scrolled up new messages don't move the view, and a hint says they'r
   await Bun.sleep(40);
 
   expect(visible()).toEqual(range(21, 30));
-  expect(paneTitle()).toMatch(/new messages below/i);
+  expect(bottomBorder()).toMatch(/new messages below/i);
 
   await app.press("G");
 
@@ -408,7 +431,7 @@ test("a 2,000 message conversation renders only its window and scrolls without l
   await app.waitForScreen(num(2000));
   await app.press(keys.tab);
 
-  expect(lines()).toHaveLength(15);
+  expect(lines()).toHaveLength(16);
   expect(visible()).toEqual(range(1991, 2000));
 
   const slowest = { ms: 0 };

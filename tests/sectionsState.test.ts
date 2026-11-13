@@ -9,6 +9,7 @@ import {
 } from "../src/config/state";
 import { sectionsNote } from "../src/session/sections";
 import { type AppHarness, startAppHarness } from "./support/appHarness";
+import { sidebarRows } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 
 let app: AppHarness;
@@ -58,10 +59,8 @@ async function start(
 }
 
 const sidebarNames = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).slice(3).trim())
+  sidebarRows(app.screen())
+    .map((line) => line.slice(3).trim())
     .filter(Boolean);
 
 /** Waits until the sidebar's first rows read `expected`. */

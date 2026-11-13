@@ -62,7 +62,7 @@ test.each(["nord", "catppuccin-latte"])(
     expect(rowWith("#random")).toContain(
       backgroundCode(theme.sidebarBackground),
     );
-    expect(rowWith("Acme")).toContain(
+    expect(app.coloredScreen().at(-1)).toContain(
       backgroundCode(theme.statusBarBackground),
     );
     expect(app.coloredScreen().join("\n")).toContain(

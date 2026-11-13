@@ -13,8 +13,9 @@ afterEach(async () => {
 
 async function start(columns = 120, rows = 30) {
   app = await startAppHarness({ columns, rows });
-  await app.waitForScreen("#general", 5000);
+  await app.waitForScreen("Channe", 5000);
   await waitFor(() => app.session.currentUserId);
+  await waitFor(() => app.session.conversations().length > 0);
 }
 
 const popups: {

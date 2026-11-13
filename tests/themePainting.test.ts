@@ -94,7 +94,9 @@ test("the pane is painted with the pane background", async () => {
 test("the status bar is painted with the status bar background", async () => {
   await start();
 
-  expect(rowWith("Acme")).toContain(backgroundCode(theme.statusBarBackground));
+  expect(app.coloredScreen().at(-1)).toContain(
+    backgroundCode(theme.statusBarBackground),
+  );
 });
 
 test("an open popup fills its whole area with the popup background and a border colour", async () => {

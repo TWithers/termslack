@@ -98,7 +98,7 @@ test("a section heading is hovered too", async () => {
   const heading = app
     .screen()
     .split("\n")
-    .findIndex((row) => /^.[▾▸]/.test(row));
+    .findIndex((row) => /^│ [▾▸]/.test(row));
 
   expect(heading).toBeGreaterThanOrEqual(0);
 

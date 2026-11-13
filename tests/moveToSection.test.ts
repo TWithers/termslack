@@ -8,6 +8,7 @@ import {
 } from "../src/config/state";
 import { sectionsNote } from "../src/session/sections";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
 
@@ -48,11 +49,7 @@ const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
 const bottomLine = () => app.screen().trimEnd().split("\n").at(-2)!;
 const sectionPopup = () => findPopup(app.screen(), "New section");
 const promptText = () => sectionPopup()?.rows.join("\n") ?? "";
-const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, sidebarWidth));
+const sidebarRows = () => readSidebarRows(app.screen(), sidebarWidth);
 const sidebarNames = () =>
   sidebarRows()
     .map((row) => row.slice(3).trim())

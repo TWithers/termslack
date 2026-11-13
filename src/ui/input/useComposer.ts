@@ -27,7 +27,7 @@ export type Composer = {
  * Everything one input box needs to be drawn and laid out: its draft, the
  * wrapped lines, the completion list and the rows they take together. Used for
  * the conversation's input and for the thread's, so both behave alike.
- * `width` is the pane's width, `availableHeight` the rows the pane has to
+ * `width` is the width of the pane's content (inside its border and padding), `availableHeight` the rows the pane has to
  * share between its messages and this, and `noticeLines` the extra rows the
  * owner draws above the box.
  */
@@ -51,7 +51,7 @@ export function useComposer({
   const draft = place === undefined ? emptyInput : drafts.get(place);
   const layout = layoutInput(
     draft,
-    Math.max(1, width - 1 - inputBoxSideChrome),
+    Math.max(1, width - inputBoxSideChrome),
     Math.max(
       1,
       Math.min(

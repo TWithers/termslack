@@ -61,19 +61,19 @@ export function messageNear(
 }
 
 /**
- * The row of a pane drawn `row` lines down from its title (0), given the
- * `visible` rows and the pane's `listHeight` (title included). Rows are
- * drawn from the bottom up, so a short list leaves its blank lines on top.
- * `undefined` for the title, a blank line or anywhere past the pane.
+ * The row of a pane's list drawn `row` lines down from its first line (0),
+ * given the `visible` rows and the list's height `listHeight`. Rows are drawn
+ * from the bottom up, so a short list leaves its blank lines on top.
+ * `undefined` for a blank line or anywhere past the list.
  */
 export function visibleRowAt(
   visible: PaneRow[],
   listHeight: number,
   row: number,
 ): PaneRow | undefined {
-  const blank = Math.max(0, listHeight - 1 - visible.length);
+  const blank = Math.max(0, listHeight - visible.length);
 
-  return visible[row - 1 - blank];
+  return row < 0 ? undefined : visible[row - blank];
 }
 
 const barText = "▌";

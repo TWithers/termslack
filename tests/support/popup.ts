@@ -15,19 +15,27 @@ export type Popup = {
   rows: string[];
 };
 
-/** Finds the bordered popup whose top border carries `title` on a rendered screen, or undefined when none is drawn. */
+/**
+ * Finds the bordered popup whose top border carries `title` on a rendered
+ * screen, or undefined when none is drawn. Every pane has a title on its
+ * border too, so when the same text is on several top borders the lowest one
+ * is the popup (a popup is drawn over the panes, never above their titles).
+ */
 export function findPopup(screen: string, title: string): Popup | undefined {
   const lines = screen.split("\n");
-  const top = lines.findIndex(
-    (line) => line.includes(title) && line.includes("╭"),
+  const top = lines.findLastIndex(
+    (line) => line.includes(`─ ${title}`) && line.includes("╭"),
   );
 
   if (top < 0) {
     return undefined;
   }
 
-  const left = [...lines[top]!].indexOf("╭");
-  const right = [...lines[top]!].indexOf("╮") + 1;
+  const cells = [...lines[top]!];
+  const titleAt = cells.join("").indexOf(`─ ${title}`);
+  const titleCell = [...cells.join("").slice(0, titleAt)].length;
+  const left = cells.lastIndexOf("╭", titleCell);
+  const right = cells.indexOf("╮", titleCell) + 1;
 
   if (left < 0 || right <= left) {
     return undefined;

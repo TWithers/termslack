@@ -5,6 +5,7 @@ import { waitFor, type FakeSlack } from "./support/fakeSlack";
 import { shortcuts } from "../src/ui/app/shortcuts";
 import { findPopup } from "./support/popup";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -83,10 +84,7 @@ async function start({
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).trim());
+  readSidebarRows(app.screen(), 32).map((line) => line.trim());
 
 const inSidebar = (name: string) =>
   sidebarRows().some((row) => row.includes(name));

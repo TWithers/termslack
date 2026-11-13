@@ -66,7 +66,9 @@ export function TitledBox({
   const fitted = fitBorderLabels(
     Math.max(0, width - 2),
     Object.fromEntries(
-      Object.entries(labels).map(([place, label]) => [place, label.text]),
+      Object.entries(labels).flatMap(([place, label]) =>
+        label ? [[place, label.text]] : [],
+      ),
     ) as BorderLabels,
   );
 

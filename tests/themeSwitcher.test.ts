@@ -203,7 +203,9 @@ test("moving the highlighted row repaints the sidebar, a message row, the status
   expect(message).not.toContain(colourCode(48, before.paneBackground));
   expect(message).not.toContain(colourCode(38, before.text));
   expect(authorColourCode()).not.toBe(authorBefore);
-  expect(rowWith("Acme")).toContain(colourCode(48, theme.statusBarBackground));
+  expect(app.coloredScreen().at(-1)).toContain(
+    colourCode(48, theme.statusBarBackground),
+  );
   expect(rowWith(title)).toContain(colourCode(48, theme.popupBackground));
   expect(rowWith("catppuccin")).toContain(
     colourCode(48, theme.selectionBackground),

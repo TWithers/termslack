@@ -1,4 +1,4 @@
-import type { PaneWidths } from "./paneLayout";
+import { borderSize, type PaneWidths, paneInnerHeight } from "./paneLayout";
 
 export type Rect = {
   top: number;
@@ -29,14 +29,14 @@ export type MouseLayout = {
   columns: number;
   rows: number;
   sidebarWidth: number;
-  /** Rows above the reaction prompt and the status bar: the sidebar and panes. */
+  /** Rows above the status bar: the sidebar's and the panes' boxes, borders included. */
   bodyHeight: number;
   /** The panes beside the sidebar: the message pane first when it is drawn, then the thread pane. */
   panes: PaneWidths;
   /** Whether a conversation is open, so the message pane is drawn (unless a thread covers it, see `panes`). */
   hasConversation: boolean;
   hasThread: boolean;
-  /** Rows the input box under the message pane takes (completion list and notice included). */
+  /** Rows the input under the message pane's list takes (completion list and notice included); they sit inside the pane's border. */
   messageInputHeight: number;
   threadInputHeight: number;
   /** The open popup, drawn over everything. */
@@ -49,9 +49,12 @@ export type Hit =
   | { area: "statusBar"; column: number }
   | {
       /**
-       * The sidebar: `row` is the screen row. A list pane: `row` counts from
-       * its title row (0), so the pane's own row layout maps it to a
-       * message. An input box: from its first row.
+       * The sidebar: `row` counts from its first line inside the border (0;
+       * -1 on the top border). A list pane: `row` counts from the first row
+       * of its list inside the border, so the pane's own row layout maps it
+       * to a message (-1 on the top border). An input: from its first row
+       * (past its last row on the bottom border). `column` counts from the
+       * box's left edge, border included.
        */
       area: "sidebar" | "messages" | "thread" | "input" | "threadInput";
       column: number;
@@ -75,7 +78,10 @@ function contains(
   );
 }
 
-/** One pane's column: its list on top, its input box under it. */
+/**
+ * One pane's box: its border, its list on top, its input under it. The top
+ * border belongs to the list (as row -1) and the bottom border to the input.
+ */
 function hitPane(
   list: "messages" | "thread",
   input: "input" | "threadInput",
@@ -90,11 +96,12 @@ function hitPane(
     return { area: "none" };
   }
 
-  const listHeight = Math.max(0, bodyHeight - inputHeight);
+  const listHeight = Math.max(0, paneInnerHeight(bodyHeight) - inputHeight);
+  const listRow = row - borderSize;
 
-  return row < listHeight
-    ? { area: list, column: column - left, row }
-    : { area: input, column: column - left, row: row - listHeight };
+  return listRow < listHeight
+    ? { area: list, column: column - left, row: listRow }
+    : { area: input, column: column - left, row: listRow - listHeight };
 }
 
 /**
@@ -128,7 +135,7 @@ export function hitTest(layout: MouseLayout, column: number, row: number): Hit {
   }
 
   if (column < layout.sidebarWidth) {
-    return { area: "sidebar", column, row };
+    return { area: "sidebar", column, row: row - borderSize };
   }
 
   const { panes } = layout;

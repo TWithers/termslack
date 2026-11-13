@@ -19,6 +19,7 @@ import { shortcuts } from "../src/ui/app/shortcuts";
 import { sidebarKeyHints } from "../src/ui/app/StatusBar";
 import { theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 
 let app: AppHarness;
@@ -107,12 +108,11 @@ function say(channel: string, overrides: Record<string, unknown> = {}) {
 }
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, sidebarWidth).trim());
+  readSidebarRows(app.screen(), sidebarWidth).map((line) => line.trim());
 const rowOf = (name: string) =>
   sidebarRows().findIndex((row) => row.includes(name));
+/** The screen row a sidebar row is drawn on: one below the box's top border. */
+const screenRowOf = (name: string) => rowOf(name) + 1;
 const isListed = (name: string) => rowOf(name) !== -1;
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
 const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
@@ -278,7 +278,7 @@ describe("mouse rows map to what is drawn", () => {
     await start({ muteMemory: muteMemory([general]) });
     await app.press("M");
 
-    await app.click(5, rowOf("#random"));
+    await app.click(5, screenRowOf("#random"));
     await app.waitForScreen("#random");
 
     expect(selectedRow()).toContain("#random");
@@ -289,16 +289,16 @@ describe("mouse rows map to what is drawn", () => {
     await app.press("M");
 
     await selectRow("@stantz");
-    await app.hover(5, rowOf("#random"));
+    await app.hover(5, screenRowOf("#random"));
 
     const [red, green, blue] = [1, 3, 5].map((at) =>
       Number.parseInt(theme.sidebarHoverBackground.slice(at, at + 2), 16),
     );
 
-    expect(app.coloredScreen()[rowOf("#random")]).toContain(
+    expect(app.coloredScreen()[screenRowOf("#random")]).toContain(
       `\u001b[48;2;${red};${green};${blue}m`,
     );
-    expect(app.coloredScreen()[rowOf("#general")] ?? "").not.toContain(
+    expect(app.coloredScreen()[screenRowOf("#general")] ?? "").not.toContain(
       `\u001b[48;2;${red};${green};${blue}m`,
     );
   });

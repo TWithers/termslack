@@ -3,6 +3,7 @@ import { loadFixture, loadPayload } from "./support/fixtures";
 import { waitFor, type FakeSlack } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -74,10 +75,7 @@ const results = (): string[] =>
     .filter(Boolean);
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).trim());
+  readSidebarRows(app.screen()).map((line) => line.trim());
 
 async function type(text: string) {
   for (const character of text) {

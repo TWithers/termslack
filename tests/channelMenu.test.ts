@@ -9,6 +9,7 @@ import {
   sgrMouse,
   startAppHarness,
 } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -75,12 +76,11 @@ const menu = (title: string) =>
     title,
   );
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, sidebarWidth).trim());
+  readSidebarRows(app.screen(), sidebarWidth).map((line) => line.trim());
 const rowOf = (name: string) =>
   sidebarRows().findIndex((row) => row.includes(name));
+/** The screen row a sidebar row is drawn on: one below the box's top border. */
+const screenRowOf = (name: string) => rowOf(name) + 1;
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
 const leaveCalls = () =>
   app.slack.calls.filter((call) => call.method === "conversations.leave");
@@ -130,7 +130,7 @@ test("the menu opens beside the selected entry, over the panes", async () => {
   const popup = menu("#random")!;
 
   expect(popup.left).toBe(sidebarWidth);
-  expect(popup.top).toBe(rowOf("#random"));
+  expect(popup.top).toBe(screenRowOf("#random"));
 });
 
 test("m on a DM, a group DM or a heading does nothing, not even a status message", async () => {
@@ -156,7 +156,7 @@ test("m on a DM, a group DM or a heading does nothing, not even a status message
 test("a right-click on a channel selects it, without opening it, and opens its menu", async () => {
   await start();
 
-  await rightClick(5, rowOf("#secret"));
+  await rightClick(5, screenRowOf("#secret"));
 
   expect(selectedRow()).toContain("#secret");
   expect(menu("#secret")).toBeDefined();
@@ -169,8 +169,8 @@ test("a right-click on a channel selects it, without opening it, and opens its m
 test("a right-click on a DM, a heading or an empty row does nothing", async () => {
   await start();
 
-  await rightClick(5, rowOf("@Peter Venkman"));
-  await rightClick(5, rowOf("Direct messages"));
+  await rightClick(5, screenRowOf("@Peter Venkman"));
+  await rightClick(5, screenRowOf("Direct messages"));
   await rightClick(5, 28);
 
   expect(app.screen()).not.toContain("Leave channel");

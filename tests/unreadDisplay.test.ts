@@ -4,6 +4,7 @@ import { loadPayload } from "./support/fixtures";
 import { waitFor } from "./support/fakeSlack";
 import { sidebarGroups, sidebarRow } from "../src/ui/app/sidebarEntries";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -39,10 +40,7 @@ async function say(channel: string, overrides: Record<string, unknown> = {}) {
 }
 
 const sidebarLineWith = (text: string) =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32))
+  sidebarRows(app.screen(), 32)
     .find((line) => line.includes(text))
     ?.trimEnd();
 
@@ -113,7 +111,7 @@ test("read conversations are dimmed, unread are bold bright white with no dot, m
       .screen()
       .split("\n")
       .find((line) => line.includes("#general"))
-      ?.slice(0, 32);
+      ?.slice(1, 31);
 
   await waitFor(() => drawnGeneralRow()?.endsWith(" 2 ") === true);
   expect(sidebarLineWith("#general")).toMatch(/^[› ][▌ ] #general +2$/);

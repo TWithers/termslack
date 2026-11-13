@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 
 let app: AppHarness;
@@ -29,10 +30,7 @@ async function start(
 }
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, 32).trimEnd());
+  readSidebarRows(app.screen(), 32).map((line) => line.trimEnd());
 
 /** The presence marker cell of the sidebar row for `name` (`@Peter Venkman`), or undefined when there is no such row. */
 const marker = (name: string) =>
@@ -94,24 +92,27 @@ test("a collapsed Direct messages section is not checked", async () => {
   ).toHaveLength(0);
 });
 
-test("the open DM's header shows the dot before the name", async () => {
+/** The message pane's top border, where the title and the person's presence are. */
+const paneTopBorder = () => app.screen().split("\n")[0]!.slice(32);
+
+test("the open DM's top border shows the person's name and that they are active", async () => {
   await start();
 
   await waitFor(() => marker("@Peter Venkman") === "●");
   await openRow("@Peter Venkman");
 
   await waitFor(() =>
-    /● @Peter Venkman/.test(app.screen().split("\n")[0]!.slice(32)),
+    /^╭─ @Peter Venkman ─+ ● active ─╮$/.test(paneTopBorder()),
   );
 });
 
-test("an away person's header shows the hollow dot", async () => {
+test("an away person's top border shows the hollow dot and away", async () => {
   await start();
 
   await waitFor(() => marker("@stantz") === "○");
   await openRow("@stantz");
 
-  await waitFor(() => /○ @stantz/.test(app.screen().split("\n")[0]!.slice(32)));
+  await waitFor(() => /^╭─ @stantz ─+ ○ away ─╮$/.test(paneTopBorder()));
 });
 
 /** Selects the sidebar row for `name` with the arrow keys and opens it. */
@@ -130,7 +131,7 @@ async function openRow(name: string) {
 }
 
 test("people below the sidebar's window are checked once they scroll into view", async () => {
-  await start(undefined, { rows: 6 });
+  await start(undefined, { rows: 8 });
 
   await waitFor(() => marker("@Peter Venkman") === "●");
   await Bun.sleep(200);

@@ -22,24 +22,33 @@ function layout(overrides: Partial<MouseLayout> = {}): MouseLayout {
   };
 }
 
-test("the sidebar, the message pane, its input box and the status bar", () => {
+/*
+ * Every box has a border. Inside the 29-row body the inner height is 27: the
+ * message pane's list takes 24 rows (screen rows 1 to 24) and its 3-row input
+ * rows 25 to 27; row 0 is the top border and row 28 the bottom one.
+ */
+test("the sidebar, the message pane, its input and the status bar", () => {
   const l = layout();
 
-  expect(hitTest(l, 0, 0)).toEqual({ area: "sidebar", column: 0, row: 0 });
-  expect(hitTest(l, 31, 10)).toEqual({ area: "sidebar", column: 31, row: 10 });
-  expect(hitTest(l, 32, 0)).toEqual({ area: "messages", column: 0, row: 0 });
-  expect(hitTest(l, 159, 25)).toEqual({
+  expect(hitTest(l, 0, 0)).toEqual({ area: "sidebar", column: 0, row: -1 });
+  expect(hitTest(l, 5, 1)).toEqual({ area: "sidebar", column: 5, row: 0 });
+  expect(hitTest(l, 31, 10)).toEqual({ area: "sidebar", column: 31, row: 9 });
+  expect(hitTest(l, 5, 28)).toEqual({ area: "sidebar", column: 5, row: 27 });
+  expect(hitTest(l, 32, 0)).toEqual({ area: "messages", column: 0, row: -1 });
+  expect(hitTest(l, 34, 1)).toEqual({ area: "messages", column: 2, row: 0 });
+  expect(hitTest(l, 159, 24)).toEqual({
     area: "messages",
     column: 127,
-    row: 25,
+    row: 23,
   });
-  expect(hitTest(l, 40, 26)).toEqual({ area: "input", column: 8, row: 0 });
-  expect(hitTest(l, 40, 28)).toEqual({ area: "input", column: 8, row: 2 });
+  expect(hitTest(l, 40, 25)).toEqual({ area: "input", column: 8, row: 0 });
+  expect(hitTest(l, 40, 27)).toEqual({ area: "input", column: 8, row: 2 });
+  expect(hitTest(l, 40, 28)).toEqual({ area: "input", column: 8, row: 3 });
   expect(hitTest(l, 5, 29)).toEqual({ area: "statusBar", column: 5 });
   expect(hitTest(l, 159, 29)).toEqual({ area: "statusBar", column: 159 });
 });
 
-test("with the thread open the area is shared, each pane with its own input box", () => {
+test("with the thread open the area is shared, each pane with its own input", () => {
   const l = layout({ hasThread: true });
   const { message } = l.panes;
 
@@ -47,23 +56,23 @@ test("with the thread open the area is shared, each pane with its own input box"
   expect(hitTest(l, 32 + message, 5)).toEqual({
     area: "thread",
     column: 0,
-    row: 5,
+    row: 4,
   });
-  expect(hitTest(l, 32 + message - 1, 27)).toMatchObject({ area: "input" });
-  expect(hitTest(l, 32 + message, 25)).toEqual({
+  expect(hitTest(l, 32 + message - 1, 26)).toMatchObject({ area: "input" });
+  expect(hitTest(l, 32 + message, 24)).toEqual({
     area: "threadInput",
     column: 0,
     row: 0,
   });
-  expect(hitTest(l, 32 + message, 24)).toMatchObject({ area: "thread" });
+  expect(hitTest(l, 32 + message, 23)).toMatchObject({ area: "thread" });
 });
 
 test("on a narrow terminal the thread takes the message pane's place", () => {
   const l = layout({ columns: 110, hasThread: true });
 
   expect(l.panes.showMessages).toBe(false);
-  expect(hitTest(l, 32, 5)).toEqual({ area: "thread", column: 0, row: 5 });
-  expect(hitTest(l, 109, 28)).toMatchObject({ area: "threadInput" });
+  expect(hitTest(l, 32, 5)).toEqual({ area: "thread", column: 0, row: 4 });
+  expect(hitTest(l, 109, 27)).toMatchObject({ area: "threadInput" });
   expect(hitTest(l, 31, 5)).toMatchObject({ area: "sidebar" });
 });
 
@@ -123,6 +132,6 @@ test("the reaction prompt is a popup over the panes", () => {
     column: 18,
     row: 1,
   });
-  expect(hitTest(l, 70, 25)).toMatchObject({ area: "input" });
+  expect(hitTest(l, 70, 24)).toMatchObject({ area: "input" });
   expect(hitTest(l, 70, 9)).not.toMatchObject({ area: "popup" });
 });

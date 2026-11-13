@@ -8,6 +8,7 @@ import {
   sgrMouse,
   startAppHarness,
 } from "./support/appHarness";
+import { sidebarRows as readSidebarRows } from "./support/panes";
 
 let app: AppHarness;
 
@@ -87,10 +88,7 @@ async function start({
 }
 
 const sidebarRows = () =>
-  app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(0, sidebarWidth).trim());
+  readSidebarRows(app.screen(), sidebarWidth).map((line) => line.trim());
 const rowOf = (name: string) =>
   sidebarRows().findIndex((row) => row.includes(name));
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
@@ -358,16 +356,9 @@ test("a click outside closes it, and one inside does not", async () => {
 test("opened from a right-click menu it works the same", async () => {
   await start();
 
-  await app.mouse(sgrMouse(rightButton, 5, rowOf("#secret"), "M"));
+  await app.mouse(sgrMouse(rightButton, 5, rowOf("#secret") + 1, "M"));
 
-  const menu = findPopup(
-    app
-      .screen()
-      .split("\n")
-      .map((line) => " ".repeat(sidebarWidth) + line.slice(sidebarWidth))
-      .join("\n"),
-    "#secret",
-  )!;
+  const menu = findPopup(app.screen(), "#secret")!;
 
   await app.click(menu.left + 3, menu.top + 2);
   await app.waitForScreen("#secret details");

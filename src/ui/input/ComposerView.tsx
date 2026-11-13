@@ -21,7 +21,7 @@ export function ComposerView({
   composer: Composer;
   focused: boolean;
   placeholder: string;
-  /** The pane's width. */
+  /** The width of the pane's content (inside its border and padding). */
   width: number;
   notice?: string;
   /** Why the box takes no text; it then shows this instead of the placeholder. */
@@ -30,12 +30,12 @@ export function ComposerView({
   const { completion } = composer;
 
   return (
-    <Box paddingLeft={1} flexShrink={0} flexDirection="column">
+    <Box flexShrink={0} flexDirection="column">
       {focused && completion.entries.length > 0 ? (
         <CompletionList
           entries={completion.entries}
           selected={completion.selected}
-          width={Math.min(width - 1, 48)}
+          width={Math.min(width, 48)}
         />
       ) : null}
       {notice ? (
@@ -48,7 +48,7 @@ export function ComposerView({
         focused={focused}
         placeholder={disabledReason ?? placeholder}
         disabled={disabledReason !== undefined}
-        width={width - 1}
+        width={width}
       />
     </Box>
   );

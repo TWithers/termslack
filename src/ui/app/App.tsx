@@ -23,6 +23,13 @@ import type { MouseSource } from "./mouse";
 import { PopupOverlay } from "./PopupOverlay";
 import { handleSelectionKey } from "./paneKeys";
 import { pressed, shortcutKeys } from "./shortcuts";
+import {
+  borderSize,
+  paneContentWidth,
+  paneInnerHeight,
+  sidebarListHeight,
+} from "./paneLayout";
+import { TitledBox } from "../TitledBox";
 import { conversationRows, dayKey, isShown, olderStatusText } from "./paneRows";
 import { theme } from "../theme";
 import { Sidebar } from "./Sidebar";
@@ -33,6 +40,7 @@ import {
   sectionIdOf,
   selectableIds,
   lineKey,
+  presenceRun,
   sidebarGroups,
   sidebarLines,
   sidebarScrollStart,
@@ -45,7 +53,11 @@ import {
   StatusBar,
   statusWarning,
 } from "./StatusBar";
-import { isChannel } from "../../session/events";
+import {
+  type Conversation,
+  isChannel,
+  type Presence,
+} from "../../session/events";
 import type { ChannelRef } from "./useConfirmPrompt";
 import { useCollapsedSections } from "./useCollapsedSections";
 import { useHideMuted } from "./useHideMuted";
@@ -123,6 +135,44 @@ function sidebarWidth(columns: number): number {
       Math.max(minSidebarWidth, Math.floor(columns / 3)),
     ),
   );
+}
+
+/**
+ * What the message pane's top border says on the right: a channel's member
+ * count when Slack gave one, or a DM's person being active or away (Slack's
+ * user records here carry no time zone, so there is no local time to show).
+ */
+function conversationMetaOf(
+  conversation: Conversation | undefined,
+  presence: Presence | undefined,
+): { text: string[]; color: string } | undefined {
+  if (conversation === undefined) {
+    return undefined;
+  }
+
+  if (conversation.kind === "im") {
+    if (presence === undefined) {
+      return undefined;
+    }
+
+    const marker = presenceRun(presence);
+
+    return {
+      text: [`${marker.text} ${presence}`, marker.text],
+      color: marker.color ?? theme.secondaryText,
+    };
+  }
+
+  const count = conversation.memberCount;
+
+  if (!isChannel(conversation.kind) || count === undefined) {
+    return undefined;
+  }
+
+  return {
+    text: [`${count} ${count === 1 ? "member" : "members"}`, String(count)],
+    color: theme.secondaryText,
+  };
 }
 
 /** The whole terminal UI: sidebar and main pane side by side, with the status bar underneath. */
@@ -229,7 +279,7 @@ export function App({
     session,
     version,
     areaWidth,
-    height: Math.max(0, bodyHeight - 1),
+    height: paneInnerHeight(bodyHeight),
     now,
     today,
     drafts,
@@ -248,7 +298,7 @@ export function App({
   const inputProblem = writeProblem ?? notMemberProblem;
   const { widths } = thread;
   const paneWidth = widths.message;
-  const textWidth = Math.max(1, paneWidth - 1);
+  const textWidth = Math.max(1, paneContentWidth(paneWidth));
   const focusOrder = focusOrderOf({
     hasConversation: openId !== undefined,
     showsMessages: widths.showMessages,
@@ -268,14 +318,17 @@ export function App({
           ? editPlace(editing)
           : draftKey(openId),
     session,
-    width: paneWidth,
-    availableHeight: bodyHeight,
+    width: textWidth,
+    availableHeight: paneInnerHeight(bodyHeight),
     focused: focus === "input",
     noticeLines: editing?.input === "input" ? 1 : 0,
   });
   /** The edit open in the focused input, if any: Enter and Esc there save or cancel it, the other input is unaffected. */
   const focusedEdit = editing?.input === focus ? editing : undefined;
-  const messageHeight = Math.max(0, bodyHeight - composer.height);
+  const messageHeight = Math.max(
+    0,
+    paneInnerHeight(bodyHeight) - composer.height,
+  );
   const openHistory =
     openId === undefined ? undefined : history.statusOf(openId);
   const { rows: paneRows } = useMemo(
@@ -288,7 +341,7 @@ export function App({
   );
   const messages = usePaneSelection({
     rows: paneRows,
-    height: Math.max(0, messageHeight - 1),
+    height: messageHeight,
     onReachTop: () => {
       if (openId !== undefined) {
         history.loadOlder(openId);
@@ -546,13 +599,13 @@ export function App({
     scrollStart.current,
     lines,
     selectedId,
-    bodyHeight,
+    sidebarListHeight(bodyHeight),
   );
 
   const visibleLines = visibleSidebarLines(
     lines,
     scrollStart.current,
-    bodyHeight,
+    sidebarListHeight(bodyHeight),
   );
   const unresolvedIds = visibleLines
     .flatMap((line) =>
@@ -652,7 +705,7 @@ export function App({
     );
 
     popups.channelMenu.open(channel, {
-      top: row ?? Math.max(0, drawnAt),
+      top: row ?? Math.max(0, drawnAt) + borderSize,
       left: sidebarCols,
     });
   }
@@ -851,6 +904,31 @@ export function App({
     openEntry?.kind === "entry" ? openEntry.entry : openRecordEntry
   )?.label;
 
+  const conversationMeta = conversationMetaOf(
+    openConversationRecord,
+    openEntry?.kind === "entry"
+      ? openEntry.entry.presence
+      : openRecordEntry?.presence,
+  );
+  const threadReplyCount =
+    thread.threadTs === undefined || thread.conversationId === undefined
+      ? 0
+      : Math.max(
+          session.message(thread.conversationId, thread.threadTs)?.replyCount ??
+            0,
+          session.threadReplies(thread.conversationId, thread.threadTs).length,
+        );
+  const replyCountMeta =
+    threadReplyCount > 0
+      ? {
+          text: [
+            `${threadReplyCount} ${threadReplyCount === 1 ? "reply" : "replies"}`,
+            String(threadReplyCount),
+          ],
+          color: theme.secondaryText,
+        }
+      : undefined;
+
   return (
     <Box
       flexDirection="column"
@@ -866,6 +944,7 @@ export function App({
         backgroundColor={theme.paneBackground}
       >
         <Sidebar
+          workspaceName={workspaceName}
           lines={lines}
           start={scrollStart.current}
           selectedId={selectedId}
@@ -880,11 +959,9 @@ export function App({
         widths.showMessages ? (
           <ComposedPane
             title={openLabel}
-            presence={
-              (openEntry?.kind === "entry" ? openEntry.entry : openRecordEntry)
-                ?.presence
-            }
+            meta={conversationMeta}
             status={olderStatusText(openHistory)}
+            focused={focus === "messages" || focus === "input"}
             selection={messages}
             listFocused={focus === "messages"}
             composer={composer}
@@ -896,15 +973,26 @@ export function App({
             height={bodyHeight}
           />
         ) : openId === undefined ? (
-          <Box flexGrow={1} flexShrink={1} overflow="hidden">
-            <Text color={theme.secondaryText} wrap="truncate">
-              No conversation open
-            </Text>
-          </Box>
+          <TitledBox
+            width={widths.message}
+            height={bodyHeight}
+            borderColor={theme.border}
+            background={theme.paneBackground}
+            frame={{ flexShrink: 0 }}
+            labels={{
+              topLeft: {
+                text: "No conversation open",
+                color: theme.border,
+                bold: true,
+              },
+            }}
+          />
         ) : null}
         {thread.threadTs !== undefined ? (
           <ComposedPane
             title="Thread"
+            meta={replyCountMeta}
+            focused={focus === "thread" || focus === "threadInput"}
             selection={thread.selection}
             listFocused={focus === "thread"}
             composer={thread.composer}
