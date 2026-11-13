@@ -31,7 +31,7 @@ _Avoid_: Folder, group, category
 The row that names a sidebar section and collapses or expands it. Not a sidebar entry.
 
 **Pane**:
-One of the scrolling areas that show messages: the message pane (the open conversation) or the thread pane (one thread beside it).
+One of the scrolling areas that show messages: the message pane (the open conversation) or the thread pane (one thread beside it). Drawn as a bordered box with its title on the border and its input box inside, under a divider.
 
 **Input box**:
 Where a message is written, under the message pane or the thread pane.
@@ -49,8 +49,9 @@ _Avoid_: Context menu, actions menu
 The read-only popup describing one channel: name, public or private, topic, description, creator and creation date, member count, ID, its section and whether it's muted.
 _Avoid_: Channel info, details modal
 
-**Status bar**:
-The line along the bottom: workspace, connection, hints, and one-line questions such as "Leave #x? y/n".
+**Status line**:
+The message pane's bottom border: one-line questions such as "Leave #x? y/n" first, then notices and warnings, then the keys for whatever has focus. The connection shows on the sidebar's bottom border instead.
+_Avoid_: Status bar (there is no longer a separate bottom line)
 
 **Theme**:
 termslack's own colours for every part of the screen: each part's background, text and hover colours. termslack paints the whole screen with it instead of relying on the terminal's colours.
