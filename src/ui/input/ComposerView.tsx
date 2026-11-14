@@ -2,12 +2,13 @@ import { Box } from "ink";
 import { Text } from "../SafeText";
 import { theme } from "../theme";
 import { CompletionList } from "./CompletionList";
-import { InputBox } from "./InputBox";
+import { InputBox, inputDividerRows } from "./InputBox";
 import type { Composer } from "./useComposer";
 
 /**
- * An input box with its completion list above it (while focused and open) and
- * an optional one-line notice, such as "also send to #general". The height it
+ * The input lines with the completion list above (while focused and open),
+ * an optional one-line notice, such as "also send to #general", then a blank row
+ * the pane draws its divider over, then the lines. The height it
  * takes is `composer.height`.
  */
 export function ComposerView({
@@ -43,6 +44,7 @@ export function ComposerView({
           {notice}
         </Text>
       ) : null}
+      <Box height={inputDividerRows} />
       <InputBox
         layout={composer.layout}
         focused={focused}

@@ -966,7 +966,7 @@ export function App({
             listFocused={focus === "messages"}
             composer={composer}
             inputFocused={focus === "input"}
-            placeholder={`Message ${openLabel} (press i to write)`}
+            placeholder={`Message ${openLabel}`}
             notice={editing?.input === "input" ? editingNotice : undefined}
             disabledReason={inputProblem}
             width={paneWidth}
@@ -997,7 +997,7 @@ export function App({
             listFocused={focus === "thread"}
             composer={thread.composer}
             inputFocused={focus === "threadInput"}
-            placeholder="Reply in thread (press i to write)"
+            placeholder="Reply…"
             notice={
               editing?.input === "threadInput"
                 ? editingNotice

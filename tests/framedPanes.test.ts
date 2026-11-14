@@ -8,7 +8,7 @@ import {
 } from "./support/colours";
 import { waitFor } from "./support/fakeSlack";
 import { loadFixture } from "./support/fixtures";
-import { sidebarRows } from "./support/panes";
+import { dividerRow, paneInputLines, sidebarRows } from "./support/panes";
 
 useTerminalColour();
 
@@ -427,5 +427,171 @@ describe("narrow terminals", () => {
     expect(top.endsWith("╮")).toBe(true);
     expect(top).toContain("…");
     expect(Bun.stringWidth(top)).toBe(36);
+  });
+});
+
+describe("the input inside its pane", () => {
+  const altEnter = "\x1b\r";
+  const bodyRows = 29;
+
+  test("a divider joined to the border sits over the placeholder, and the bottom border is the pane's", async () => {
+    await start();
+    await openGeneral();
+
+    const divider = dividerRow(app.screen());
+
+    expect(lines()[divider]!.slice(32)).toMatch(/^├─+┤$/);
+    expect(paneInputLines(app.screen())).toEqual(["Message #general"]);
+    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰─+╯$/);
+    expect(divider).toBe(bodyRows - 3);
+  });
+
+  test("the thread's placeholder says Reply…, under its own divider", async () => {
+    await start({ columns: 140 });
+    await openGeneral();
+    await app.press(keys.tab);
+    await app.press("k");
+    await app.press(keys.enter);
+    await app.waitForScreen("first reply");
+
+    expect(paneInputLines(app.screen(), 86)).toEqual(["Reply…"]);
+    expect(lines()[dividerRow(app.screen(), 86)]!.slice(86)).toMatch(/^├─+┤$/);
+  });
+
+  test("the joins use the pane's border colour; the run follows the divider rule", async () => {
+    await start();
+    await openGeneral();
+
+    const colours = () => {
+      const row = app.coloredScreen()[dividerRow(app.screen())]!;
+
+      return {
+        left: foregroundAt(row, "├"),
+        run: foregroundAt(row, "──"),
+        right: foregroundAt(row, "┤", 0),
+      };
+    };
+    const focus = foregroundCode(theme.focus);
+    const border = foregroundCode(theme.border);
+
+    expect(colours()).toEqual({ left: border, run: border, right: border });
+
+    await app.press(keys.tab);
+    expect(colours()).toEqual({ left: focus, run: border, right: focus });
+
+    await app.press("i");
+    expect(colours()).toEqual({ left: focus, run: focus, right: focus });
+
+    await app.press(keys.escape);
+    await app.press(keys.tab);
+    await app.press(keys.tab);
+    expect(colours()).toEqual({ left: border, run: border, right: border });
+
+    await app.press(keys.tab);
+    await app.press("i");
+    expect(colours()).toEqual({ left: focus, run: focus, right: focus });
+  });
+
+  test("the joins sit on the border columns with no gap", async () => {
+    await start();
+    await openGeneral();
+
+    const rows = lines();
+    const divider = dividerRow(app.screen());
+
+    expect(rows[divider]!.slice(32, 33)).toBe("├");
+    expect(rows[divider - 1]!.slice(32, 33)).toBe("│");
+    expect(rows[divider]!.length).toBe(rows[divider - 1]!.length);
+    expect(rows[divider]!.at(-1)).toBe("┤");
+    expect(rows[divider - 1]!.at(-1)).toBe("│");
+  });
+
+  test("a multi-line input grows upward, pushing the divider up and shrinking the list", async () => {
+    await start();
+    await openGeneral();
+
+    const before = dividerRow(app.screen());
+
+    await app.press("i");
+    await app.press("one");
+    await app.press(altEnter);
+    await app.press("two");
+    await app.press(altEnter);
+    await app.press("three");
+
+    expect(dividerRow(app.screen())).toBe(before - 2);
+    expect(paneInputLines(app.screen())).toEqual(["one", "two", "three"]);
+    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰─+╯$/);
+    expect(app.screen()).toContain("plain text");
+  });
+
+  test("growth stops at five lines and the divider stays put after that", async () => {
+    await start();
+    await openGeneral();
+    await app.press("i");
+
+    for (const word of ["a", "b", "c", "d", "e", "f", "g"]) {
+      await app.press(word);
+      await app.press(altEnter);
+    }
+
+    expect(dividerRow(app.screen())).toBe(bodyRows - 1 - 5 - 1);
+    expect(paneInputLines(app.screen())).toHaveLength(5);
+  });
+
+  test("the completion list is a small box above the divider, which stays put", async () => {
+    await start();
+    await openGeneral();
+
+    const before = dividerRow(app.screen());
+
+    await app.press("i");
+    await app.press("hi @");
+
+    const rows = lines();
+    const divider = dividerRow(app.screen());
+    const listBottom = rows.findLastIndex(
+      (line, row) => row < divider && line.slice(34).startsWith("╰"),
+    );
+
+    expect(divider).toBe(before);
+    expect(listBottom).toBeGreaterThan(0);
+    expect(listBottom).toBe(divider - 1);
+    expect(rows.slice(listBottom - 6, listBottom).join("\n")).toContain(
+      "@here",
+    );
+    expect(paneInputLines(app.screen())).toEqual(["hi @"]);
+  });
+
+  test("an edit is drawn in the input, with its note above the divider", async () => {
+    await start();
+    await openGeneral();
+    await app.press(keys.tab);
+    await app.press("k");
+    await app.press("e");
+
+    expect(paneInputLines(app.screen())).toEqual(["parent text"]);
+  });
+
+  test("a click on the input lines, or the divider, focuses the input; a click above it does not", async () => {
+    await start();
+    await openGeneral();
+
+    const divider = dividerRow(app.screen());
+
+    await app.click(60, divider + 1);
+    await app.press("x");
+    expect(paneInputLines(app.screen())).toEqual(["x"]);
+
+    await app.press(keys.escape);
+    await app.press(keys.tab);
+    await app.click(60, divider);
+    await app.press("y");
+    expect(paneInputLines(app.screen())).toEqual(["xy"]);
+
+    await app.press(keys.escape);
+    await app.click(60, divider - 1);
+    await app.press("z");
+    expect(paneInputLines(app.screen())).toEqual(["xy"]);
   });
 });

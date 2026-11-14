@@ -36,7 +36,7 @@ export type MouseLayout = {
   /** Whether a conversation is open, so the message pane is drawn (unless a thread covers it, see `panes`). */
   hasConversation: boolean;
   hasThread: boolean;
-  /** Rows the input under the message pane's list takes (completion list and notice included); they sit inside the pane's border. */
+  /** Rows under the message pane's list that belong to the input: the completion list, any notice, the divider and the input lines; they sit inside the pane's border. */
   messageInputHeight: number;
   threadInputHeight: number;
   /** The open popup, drawn over everything. */
@@ -52,8 +52,8 @@ export type Hit =
        * The sidebar: `row` counts from its first line inside the border (0;
        * -1 on the top border). A list pane: `row` counts from the first row
        * of its list inside the border, so the pane's own row layout maps it
-       * to a message (-1 on the top border). An input: from its first row
-       * (past its last row on the bottom border). `column` counts from the
+       * to a message (-1 on the top border). An input: from its first row, the
+       * completion list or notice if drawn, else the divider (past its last row on the bottom border). `column` counts from the
        * box's left edge, border included.
        */
       area: "sidebar" | "messages" | "thread" | "input" | "threadInput";
@@ -80,7 +80,9 @@ function contains(
 
 /**
  * One pane's box: its border, its list on top, its input under it. The top
- * border belongs to the list (as row -1) and the bottom border to the input.
+ * border belongs to the list (as row -1) and the bottom border to the input,
+ * which starts at its completion list, notice or divider row (the divider
+ * counts as the input).
  */
 function hitPane(
   list: "messages" | "thread",

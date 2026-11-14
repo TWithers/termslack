@@ -3,19 +3,15 @@ import { Text } from "../SafeText";
 import { theme } from "../theme";
 import type { InputLayout } from "./textInput";
 
-/** Rows an input box takes besides its text: the top and bottom border. */
-export const inputBoxChrome = 2;
-
-/** Cells the box takes beside its text: border and padding on both sides. */
-export const inputBoxSideChrome = 4;
+/** Rows an input takes besides its text: the divider above it (drawn by the pane). */
+export const inputDividerRows = 1;
 
 /**
- * A bordered box showing what is being typed, with the cursor drawn as an
- * highlighted character while the box has focus. `layout` is already wrapped and
- * cut to the lines to show (see `layoutInput`), so the box is
- * `layout.lines.length + inputBoxChrome` rows tall; the owner needs that
- * number to lay out the rest of the screen. An empty box that isn't focused
- * shows `placeholder`.
+ * The lines of what is being typed, with the cursor drawn as a highlighted
+ * character while the input has focus. It has no border of its own: the pane
+ * draws the divider above it. `layout` is already wrapped and cut to the
+ * lines to show (see `layoutInput`), so it is `layout.lines.length` rows tall.
+ * An empty input that isn't focused shows `placeholder`.
  */
 export function InputBox({
   layout,
@@ -35,16 +31,7 @@ export function InputBox({
   const isEmpty = lines.length === 1 && lines[0] === "";
 
   return (
-    <Box
-      flexDirection="column"
-      width={width}
-      flexShrink={0}
-      borderStyle="round"
-      borderColor={focused ? theme.focus : theme.border}
-      borderBackgroundColor={theme.inputBoxBackground}
-      backgroundColor={theme.inputBoxBackground}
-      paddingX={1}
-    >
+    <Box flexDirection="column" width={width} flexShrink={0}>
       {lines.map((line, row) => {
         if (isEmpty && (!focused || disabled)) {
           return (

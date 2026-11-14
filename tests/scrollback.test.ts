@@ -54,7 +54,7 @@ function historyPages(
   return pages;
 }
 
-/** 16 rows: a 15-row body, a 13-row box inside its border, a 10-line message window and a 3-row input box. */
+/** 15 rows: a 14-row body, a 12-row box inside its border, a 10-line message window, and a divider and a line of input. */
 async function start(
   count: number,
   options: Parameters<typeof startAppHarness>[0] = {},
@@ -62,7 +62,7 @@ async function start(
 ) {
   app = await startAppHarness({
     columns: 100,
-    rows: 16,
+    rows: 15,
     ...options,
     prepare: (slack) => {
       slack.respondPaged("conversations.history", pages);
@@ -230,7 +230,7 @@ test("a message taller than the view scrolls line by line", async () => {
 
   await start(
     5,
-    { columns: 50, rows: 12 },
+    { columns: 50, rows: 11 },
     historyPages(5, 50, (n) => (n === 5 ? long : undefined)),
   );
   await app.press(keys.enter);
@@ -238,7 +238,7 @@ test("a message taller than the view scrolls line by line", async () => {
   await app.press(keys.tab);
 
   expect(app.screen()).not.toContain("w0 ");
-  expect(lines()).toHaveLength(12);
+  expect(lines()).toHaveLength(11);
 
   for (const line of lines()) {
     expect(Bun.stringWidth(line)).toBeLessThanOrEqual(50);
@@ -431,7 +431,7 @@ test("a 2,000 message conversation renders only its window and scrolls without l
   await app.waitForScreen(num(2000));
   await app.press(keys.tab);
 
-  expect(lines()).toHaveLength(16);
+  expect(lines()).toHaveLength(15);
   expect(visible()).toEqual(range(1991, 2000));
 
   const slowest = { ms: 0 };

@@ -11,3 +11,34 @@ export function sidebarRows(screen: string, width = 32): string[] {
     .slice(1, bottom < 0 ? undefined : bottom)
     .map((line) => line.slice(1, width - 1));
 }
+
+/**
+ * A pane's input lines from a screen: the rows under its divider (`├───┤`)
+ * down to its bottom border, without the side borders and padding. `from` and
+ * `to` are the pane's screen columns (the message pane starts at the sidebar's
+ * width, 32); the lowest divider in that range is used.
+ */
+export function paneInputLines(
+  screen: string,
+  from = 32,
+  to?: number,
+): string[] {
+  const lines = screen.split("\n").map((line) => line.slice(from, to));
+  const divider = lines.findLastIndex((line) => line.startsWith("├"));
+  const bottom = lines.findLastIndex((line) => line.startsWith("╰"));
+
+  if (divider < 0) {
+    return [];
+  }
+
+  return lines
+    .slice(divider + 1, bottom < 0 ? undefined : bottom)
+    .map((line) => line.replace(/\s*│$/, "").replace(/^│ ?/, "").trimEnd());
+}
+
+/** The screen row of a pane's divider, or -1: the lowest row that starts with `├` in the pane's columns. */
+export function dividerRow(screen: string, from = 32, to?: number): number {
+  return screen
+    .split("\n")
+    .findLastIndex((line) => line.slice(from, to).startsWith("├"));
+}

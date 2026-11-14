@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
+import { paneInputLines } from "./support/panes";
 
 let app: AppHarness;
 
@@ -48,33 +49,20 @@ async function start(options: Parameters<typeof startAppHarness>[0] = {}) {
   await waitFor(() => app.session.currentUserId);
 }
 
-/** The input box's lines: the rows between its borders. */
-function inputLines(): string[] {
-  const lines = app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(32));
-  const top = lines.findLastIndex((line) => line.includes("╭"));
-  const bottom = lines.findLastIndex(
-    (line) => line.includes("╰") && !line.startsWith("╰"),
-  );
-
-  return lines
-    .slice(top + 1, bottom)
-    .map((line) => line.replace(/[│\s]+$/, "").replace(/^│ │ ?/, ""));
-}
+/** The input's lines: the rows under the divider. */
+const inputLines = () => paneInputLines(app.screen());
 
 const statusLine = () => app.screen().split("\n").at(-1) ?? "";
 
 test("i jumps to the input; letters, even shortcuts like q and j, are typed there", async () => {
   await start();
-  expect(app.screen()).toContain("press i to write");
+  expect(app.screen()).toContain("Message #general");
 
   await app.press("i");
   await app.press("quick j");
 
   expect(inputLines()).toEqual(["quick j"]);
-  expect(app.screen()).not.toContain("press i to write");
+  expect(app.screen()).not.toContain("Message #general");
   expect(statusLine()).toContain("Enter send");
 });
 
@@ -267,7 +255,7 @@ test("a draft stays with its conversation when switching away and back", async (
   await app.press(keys.enter);
   await app.waitForScreen("No messages yet");
 
-  expect(inputLines()).toEqual(["Message #random (press i to write)"]);
+  expect(inputLines()).toEqual(["Message #random"]);
 
   await app.press("k");
   await app.press(keys.enter);

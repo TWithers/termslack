@@ -166,7 +166,7 @@ test("T typed in an input box is a T", async () => {
 
   expect(app.screen()).not.toContain(title);
   expect(app.screen()).toContain("T");
-  expect(app.screen()).not.toContain("press i to write");
+  expect(app.screen()).not.toContain("Message #general");
 });
 
 test("the help lists T", async () => {

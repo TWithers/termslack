@@ -1,6 +1,6 @@
 import type { WorkspaceSession } from "../../session/workspaceSession";
 import { completionListChrome } from "./CompletionList";
-import { inputBoxChrome, inputBoxSideChrome } from "./InputBox";
+import { inputDividerRows } from "./InputBox";
 import {
   emptyInput,
   type InputLayout,
@@ -19,8 +19,10 @@ export type Composer = {
   draft: InputState;
   layout: InputLayout;
   completion: ReturnType<typeof useCompletion>;
-  /** Rows the whole composer takes: the box, the completion list when open, and any notice. */
+  /** Rows the whole composer takes: the completion list when open, any notice, the divider and the input lines. */
   height: number;
+  /** Rows under the divider's top edge: the divider itself and the input lines (the completion list and any notice sit above). */
+  dividerRows: number;
 };
 
 /**
@@ -51,12 +53,12 @@ export function useComposer({
   const draft = place === undefined ? emptyInput : drafts.get(place);
   const layout = layoutInput(
     draft,
-    Math.max(1, width - inputBoxSideChrome),
+    Math.max(1, width),
     Math.max(
       1,
       Math.min(
         maxInputLines,
-        availableHeight - inputBoxChrome - 4 - noticeLines,
+        availableHeight - inputDividerRows - 4 - noticeLines,
       ),
     ),
   );
@@ -66,14 +68,16 @@ export function useComposer({
       ? completion.entries.length + completionListChrome
       : 0;
 
+  const dividerRows =
+    place === undefined ? 0 : inputDividerRows + layout.lines.length;
+
   return {
     place,
     draft,
     layout,
     completion,
     height:
-      place === undefined
-        ? 0
-        : layout.lines.length + inputBoxChrome + completionHeight + noticeLines,
+      place === undefined ? 0 : completionHeight + noticeLines + dividerRows,
+    dividerRows,
   };
 }

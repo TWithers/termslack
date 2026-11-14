@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
+import { paneInputLines } from "./support/panes";
 
 let app: AppHarness;
 
@@ -89,27 +90,14 @@ const column = (from: number, to?: number) =>
 const messagePane = () => column(32, 96);
 const threadPane = () => column(96);
 
-/** The thread's input box: what is between its borders, lowest box on the right. */
-function threadInputLines(): string[] {
-  const lines = app
-    .screen()
-    .split("\n")
-    .map((line) => line.slice(96));
-  const top = lines.findLastIndex((line) => line.includes("╭"));
-  const bottom = lines.findLastIndex(
-    (line) => line.includes("╰") && !line.startsWith("╰"),
-  );
-
-  return lines
-    .slice(top + 1, bottom)
-    .map((line) => line.replace(/[│\s]+$/, "").replace(/^│ │ ?/, ""));
-}
+/** The thread's input lines: the rows under its divider. */
+const threadInputLines = () => paneInputLines(app.screen(), 96);
 
 test("i in the thread pane jumps to the thread input; Esc goes back to the thread, Esc again closes it", async () => {
   await start();
   await openParentThread();
 
-  expect(threadInputLines()).toEqual(["Reply in thread (press i to write)"]);
+  expect(threadInputLines()).toEqual(["Reply…"]);
 
   await app.press("i");
   await app.press("jq");
@@ -124,7 +112,7 @@ test("i in the thread pane jumps to the thread input; Esc goes back to the threa
   await app.press(keys.escape);
   await Bun.sleep(50);
   expect(app.screen()).not.toContain("Esc close thread");
-  expect(app.screen()).not.toContain("Reply in thread");
+  expect(app.screen()).not.toContain("Reply…");
 });
 
 test("Tab cycles through the thread input after the thread", async () => {

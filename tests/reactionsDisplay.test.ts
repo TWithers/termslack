@@ -94,7 +94,7 @@ test("a message without reactions has no reaction line", async () => {
   const lines = pane();
   const message = lines.findIndex((line) => line.includes("ship it"));
 
-  expect(lines[message + 1]?.trim().startsWith("╭")).toBe(true);
+  expect(lines[message + 1]).toMatch(/^─+┤$/);
 });
 
 test("live adds and removes update the counts, and the last removal clears the line", async () => {

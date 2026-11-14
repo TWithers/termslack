@@ -361,7 +361,7 @@ test("narrowing the terminal never drops focus into the thread input", async () 
   await app.press("x");
 
   expect(app.screen()).not.toContain("x│");
-  expect(app.screen()).toContain("Reply in thread (press i to write)");
+  expect(app.screen()).toContain("Reply…");
   expect(statusBar()).not.toContain("Enter send");
 });
 

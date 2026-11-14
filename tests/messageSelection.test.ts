@@ -49,7 +49,7 @@ function historyPages(
   return pages;
 }
 
-/** 16 rows: a 15-row body, 13 rows inside the border, a 10-line message window and a 3-row input box. */
+/** 15 rows: a 14-row body, 12 rows inside the border, a 10-line message window, and a divider and a line of input. */
 async function start(
   count: number,
   options: Parameters<typeof startAppHarness>[0] = {},
@@ -57,7 +57,7 @@ async function start(
 ) {
   app = await startAppHarness({
     columns: 100,
-    rows: 16,
+    rows: 15,
     ...options,
     prepare: (slack) => {
       slack.respondPaged("conversations.history", pages);
@@ -153,7 +153,7 @@ test("a wrapped message is selected as a whole", async () => {
 
   await start(
     3,
-    { columns: 96, rows: 18 },
+    { columns: 96, rows: 17 },
     historyPages(3, 50, (n) => (n === 2 ? { text: `msg 0002 ${long}` } : {})),
   );
   await app.press("k");
@@ -179,7 +179,7 @@ test("a message's reactions and reply count are highlighted with it, and day sep
     },
   ];
 
-  await start(3, { rows: 25 }, pages);
+  await start(3, { rows: 24 }, pages);
 
   expect(selected()).toEqual([3]);
 
@@ -359,7 +359,7 @@ test("a message taller than the view is scrolled through line by line before the
 
   await start(
     5,
-    { columns: 50, rows: 12 },
+    { columns: 50, rows: 11 },
     historyPages(5, 50, (n) => (n === 5 ? { text: long } : {})),
   );
 

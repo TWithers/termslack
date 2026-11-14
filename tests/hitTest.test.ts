@@ -135,3 +135,11 @@ test("the reaction prompt is a popup over the panes", () => {
   expect(hitTest(l, 70, 24)).toMatchObject({ area: "input" });
   expect(hitTest(l, 70, 9)).not.toMatchObject({ area: "popup" });
 });
+
+test("the divider row counts as the first row of the input, and the row above it as the list", () => {
+  const l = layout({ messageInputHeight: 3 });
+
+  expect(hitTest(l, 40, 24)).toMatchObject({ area: "messages" });
+  expect(hitTest(l, 32, 25)).toEqual({ area: "input", column: 0, row: 0 });
+  expect(hitTest(l, 159, 25)).toEqual({ area: "input", column: 127, row: 0 });
+});

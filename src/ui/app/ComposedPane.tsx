@@ -1,12 +1,41 @@
 import { Box } from "ink";
+import { Text } from "../SafeText";
 import { ComposerView } from "../input/ComposerView";
 import type { Composer } from "../input/useComposer";
 import { theme } from "../theme";
 import { TitledBox, type TitledLabel } from "../TitledBox";
 import { MessagePane } from "./MessagePane";
-import { insideBorder, paneContentWidth, panePadding } from "./paneLayout";
+import {
+  borderSize,
+  insideBorder,
+  paneContentWidth,
+  panePadding,
+} from "./paneLayout";
 import { withSelection } from "./selection";
 import type { PaneSelection } from "./usePaneSelection";
+
+/**
+ * The divider row, `├───┤`, as wide as the box so its ends sit on the left and
+ * right border. The joins take the border's colour so they continue the
+ * vertical line; the run between them takes the divider's.
+ */
+function Divider({
+  width,
+  joinColor,
+  runColor,
+}: {
+  width: number;
+  joinColor: string;
+  runColor: string;
+}) {
+  return (
+    <Text backgroundColor={theme.paneBackground}>
+      <Text color={joinColor}>├</Text>
+      <Text color={runColor}>{"─".repeat(Math.max(0, width - 2))}</Text>
+      <Text color={joinColor}>┤</Text>
+    </Text>
+  );
+}
 
 /**
  * A titled box holding a list of messages with the input under it: the
@@ -97,6 +126,20 @@ export function ComposedPane({
           notice={notice}
         />
       </Box>
+      {composer.dividerRows > 0 ? (
+        <Box
+          position="absolute"
+          top={innerHeight - composer.dividerRows}
+          left={-borderSize}
+          width={width}
+        >
+          <Divider
+            width={width}
+            joinColor={color}
+            runColor={inputFocused ? theme.focus : theme.border}
+          />
+        </Box>
+      ) : null}
     </TitledBox>
   );
 }
