@@ -136,7 +136,7 @@ describe("the first change", () => {
 
     app.session.moveToSection(general, "Work");
 
-    await app.waitForScreen(sectionsNote);
+    await app.waitForScreen("Sections are now kept by termslack");
     expect(app.session.sectionsKeptByTermslack()).toBe(true);
     await waitForSidebar(["Work", "#general", "#random", "Channels"]);
 
@@ -157,7 +157,7 @@ describe("the first change", () => {
     await start({ sections: [work] });
 
     app.session.moveToSection(general, "Work");
-    await app.waitForScreen(sectionsNote);
+    await app.waitForScreen("Sections are now kept by termslack");
 
     expect(app.session.sectionsNote()).toBe(sectionsNote);
   });

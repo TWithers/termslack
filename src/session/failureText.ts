@@ -15,7 +15,7 @@ export const commonFailures: Record<string, string> = {
 };
 
 /**
- * Why a write failed, in words for the status bar: a missing scope, a Slack
+ * Why a write failed, in words for the status line: a missing scope, a Slack
  * code (the action's own wording first, then the common one), or whatever
  * the error says when it didn't come from Slack.
  */
@@ -48,7 +48,7 @@ export function describeFailure(
   return `${action.couldnt}: ${errorMessage(error)}`;
 }
 
-/** Why a conversation's history couldn't be loaded, in words for the status bar. `switcherKeys` names the keys that open the quick switcher. */
+/** Why a conversation's history couldn't be loaded, in words for the status line. `switcherKeys` names the keys that open the quick switcher. */
 export function describeHistoryFailure(
   error: unknown,
   switcherKeys: string,

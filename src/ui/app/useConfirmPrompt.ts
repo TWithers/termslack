@@ -3,11 +3,11 @@ import { useState } from "react";
 import { pressed, type ShortcutId } from "./shortcuts";
 
 export type ConfirmPrompt<Subject> = {
-  /** What the status bar asks while a key is awaited; undefined when nothing is. */
+  /** What the status line asks while a key is awaited; undefined when nothing is. */
   prompt?: string;
   /**
    * Asks about `subject`, unless `problem` says it can't be done (then the
-   * status bar shows that instead, and nothing is asked).
+   * status line shows that instead, and nothing is asked).
    */
   ask(subject: Subject, problem: string | undefined): void;
   /** Answers a pending question (`y` runs the action, anything else cancels); returns whether a question was pending, so the key is used up. */
@@ -17,10 +17,10 @@ export type ConfirmPrompt<Subject> = {
 };
 
 /**
- * A y/n question in the status bar: "Leave #general? y/n". The next key
+ * A y/n question in the status line: "Leave #general? y/n". The next key
  * answers it, the confirm shortcut `confirmId` (`y`) runs `run` with the
  * subject asked about and any other key cancels, and nothing else sees that
- * key. `report` is the status bar's message line, for why asking isn't
+ * key. `report` is the status line's message line, for why asking isn't
  * possible.
  */
 export function useConfirmPrompt<Subject>({

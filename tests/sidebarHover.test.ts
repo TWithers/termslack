@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
 import chalk from "chalk";
 import { theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarStatus } from "./support/panes";
 
 let app: AppHarness;
 let colourLevel: typeof chalk.level;
@@ -163,7 +164,7 @@ test("hover never changes focus, selection or the open conversation, and a drag 
   const after = app.screen().split("\n");
 
   expect(after).toEqual(before.split("\n"));
-  expect(after.at(-1)).toContain("Acme · ");
+  expect(sidebarStatus(app.screen())).toContain("● connected");
 });
 
 test("the selected row keeps the selection's colours when it is hovered, and the open marker stays", async () => {

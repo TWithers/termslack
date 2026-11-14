@@ -74,7 +74,7 @@ test("opening an unread conversation clears it and marks it read in Slack", asyn
   expect(entryFor("#general").markers.isUnread).toBe(false);
 });
 
-test("the status bar shows the check's progress while it runs and nothing afterwards", async () => {
+test("the sidebar border shows the check's progress while it runs and nothing afterwards", async () => {
   app = await startAppHarness({
     unreadCheck: { concurrency: 1 },
     prepare: (slack) => {
@@ -93,11 +93,9 @@ test("the status bar shows the check's progress while it runs and nothing afterw
     },
   });
 
-  await app.waitForScreen(/Checking for unreads… \d+\/5/);
+  await app.waitForScreen(/● connected · Unreads \d+\/5/);
   await waitFor(() => app.session.unreadCheckProgress() === undefined);
   await Bun.sleep(50);
 
-  expect(await app.waitForScreen("Peter Venkman")).not.toContain(
-    "Checking for unreads",
-  );
+  expect(await app.waitForScreen("Peter Venkman")).not.toContain("Unreads");
 });

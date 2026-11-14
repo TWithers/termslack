@@ -5,7 +5,7 @@ import { waitFor, type FakeSlack } from "./support/fakeSlack";
 import { shortcuts } from "../src/ui/app/shortcuts";
 import { findPopup } from "./support/popup";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
-import { sidebarRows as readSidebarRows } from "./support/panes";
+import { sidebarRows as readSidebarRows, statusLine } from "./support/panes";
 
 let app: AppHarness;
 
@@ -81,7 +81,7 @@ async function start({
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusBar = () => statusLine(app.screen());
 
 const sidebarRows = () =>
   readSidebarRows(app.screen(), 32).map((line) => line.trim());

@@ -40,7 +40,7 @@ export type RunOptions = Pick<RenderOptions, "stdout" | "stdin"> & {
    * Ctrl+J insert a newline either way.
    */
   kittyKeyboard?: boolean;
-  /** The theme to paint with (the config's `theme`). Default: the one already applied. An unknown name means the default, and the status bar says so in the status bar. */
+  /** The theme to paint with (the config's `theme`). Default: the one already applied. An unknown name means the default, and the status line says so in the status line. */
   themeName?: string;
   /** Whether mentions and DMs ring the terminal bell (the config's `bell`). Default true. */
   bell?: boolean;

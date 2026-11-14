@@ -497,24 +497,25 @@ export function noticeRow(key: string, text: string, color?: string): PaneRow {
 }
 
 /**
- * What to say about fetching older pages. Shown beside the title rather than
- * as a row, because the rows it would belong to are above the view.
+ * What to say about fetching older pages: shown on the pane's top border
+ * while loading, and as a notice on the status line when it failed, rather
+ * than as a row, because the rows it would belong to are above the view.
  */
 export function olderStatusText(
   history?: HistoryStatus,
-): { text: string; color?: string } | undefined {
+): { text: string; failed: boolean } | undefined {
   if (history?.kind !== "loaded") {
     return undefined;
   }
 
   if (history.older.kind === "loading") {
-    return { text: "Loading older messages…" };
+    return { text: "Loading older messages…", failed: false };
   }
 
   if (history.older.kind === "failed") {
     return {
       text: `Couldn't load older messages: ${history.older.message}`,
-      color: theme.error,
+      failed: true,
     };
   }
 

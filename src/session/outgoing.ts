@@ -19,7 +19,7 @@ export type SendRequest = {
   broadcast?: boolean;
 };
 
-/** Never rejects: a failure says why in words fit for the status bar. */
+/** Never rejects: a failure says why in words fit for the status line. */
 export type SendResult =
   { ok: true; ts: string } | { ok: false; message: string };
 

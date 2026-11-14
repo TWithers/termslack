@@ -27,7 +27,7 @@ export function editPlace(editing: Editing): string {
 }
 
 export type MessageActions = {
-  /** What the status bar asks while a key is awaited; undefined when nothing is. */
+  /** What the status line asks while a key is awaited; undefined when nothing is. */
   prompt?: string;
   /**
    * Handles the keys that act on the selected message of a message list
@@ -48,7 +48,7 @@ export type MessageActions = {
 
 /**
  * The actions on the selected message of either list: editing and deleting
- * the user's own messages, and reacting to any message. `report` is the status bar's message line, for
+ * the user's own messages, and reacting to any message. `report` is the status line's message line, for
  * hints and for why Slack refused.
  *
  * Deleting asks first (see `useConfirmPrompt`): `prompt` is shown and the next

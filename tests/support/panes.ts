@@ -42,3 +42,23 @@ export function dividerRow(screen: string, from = 32, to?: number): number {
     .split("\n")
     .findLastIndex((line) => line.slice(from, to).startsWith("├"));
 }
+
+/**
+ * The status line from a screen: the message pane's bottom border, the lowest
+ * row that starts with `╰` in the pane's columns (the message pane starts at
+ * the sidebar's width, 32). Pass `to` to stop before the thread pane when it
+ * is open.
+ */
+export function statusLine(screen: string, from = 32, to?: number): string {
+  const line = screen
+    .split("\n")
+    .map((row) => row.slice(from, to))
+    .findLast((row) => row.startsWith("╰"));
+
+  return line ?? "";
+}
+
+/** The sidebar's bottom border: the connection, the unread check and "muted hidden". */
+export function sidebarStatus(screen: string, width = 32): string {
+  return statusLine(screen, 0, width);
+}

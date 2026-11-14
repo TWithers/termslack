@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-/** A note the status bar shows once it is set. */
+/** A note the status line shows once it is set. */
 export type Notice = {
   current(): string | undefined;
   subscribe(listener: () => void): () => void;

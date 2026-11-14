@@ -130,7 +130,7 @@ describe("titles", () => {
     await start();
 
     expect(topBorder()).toMatch(/^╭─ Acme ─+╮╭─/);
-    expect(lines().findIndex((line) => line.startsWith("╰"))).toBe(28);
+    expect(lines().findIndex((line) => line.startsWith("╰"))).toBe(29);
     expect(sidebarRows(app.screen())[0]!.trim()).toBe("▾ Channels");
   });
 
@@ -139,7 +139,7 @@ describe("titles", () => {
 
     expect(paneTop()).toMatch(/^╭─ No conversation open ─+╮$/);
     expect(lines().findIndex((line) => line.slice(32).startsWith("╰"))).toBe(
-      28,
+      29,
     );
   });
 
@@ -432,7 +432,7 @@ describe("narrow terminals", () => {
 
 describe("the input inside its pane", () => {
   const altEnter = "\x1b\r";
-  const bodyRows = 29;
+  const bodyRows = 30;
 
   test("a divider joined to the border sits over the placeholder, and the bottom border is the pane's", async () => {
     await start();
@@ -442,7 +442,7 @@ describe("the input inside its pane", () => {
 
     expect(lines()[divider]!.slice(32)).toMatch(/^├─+┤$/);
     expect(paneInputLines(app.screen())).toEqual(["Message #general"]);
-    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰─+╯$/);
+    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰.*╯$/);
     expect(divider).toBe(bodyRows - 3);
   });
 
@@ -521,7 +521,7 @@ describe("the input inside its pane", () => {
 
     expect(dividerRow(app.screen())).toBe(before - 2);
     expect(paneInputLines(app.screen())).toEqual(["one", "two", "three"]);
-    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰─+╯$/);
+    expect(lines()[bodyRows - 1]!.slice(32)).toMatch(/^╰.*╯$/);
     expect(app.screen()).toContain("plain text");
   });
 

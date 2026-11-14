@@ -3,6 +3,7 @@ import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 
 let app: AppHarness;
+import { statusLine } from "./support/panes";
 
 afterEach(() => app.stop());
 
@@ -80,7 +81,7 @@ const column = (from: number, to?: number) =>
 
 const messagePane = () => column(32, 96);
 const threadPane = () => column(96);
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusBar = () => statusLine(app.screen());
 
 function echoEdit(ts: string, text: string) {
   return app.sendEvents({
@@ -106,6 +107,8 @@ test("e puts the message in the input in edit mode; Enter saves it through chat.
   await app.press("e");
 
   expect(app.screen()).toContain("Editing — Enter to save, Esc to cancel");
+  expect(statusBar()).toContain("Enter save");
+  expect(statusBar()).toContain("Esc cancel");
   expect(app.screen()).toContain("my words & more");
 
   await app.press(" plus");

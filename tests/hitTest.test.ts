@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { hitTest, type MouseLayout } from "../src/ui/app/hitTest";
 import { paneWidths } from "../src/ui/app/paneLayout";
 
-/** 160x30: a 32-column sidebar, body of 29 rows, status bar on row 29. */
+/** 160x29: a 32-column sidebar and a body of 29 rows, the whole screen. */
 function layout(overrides: Partial<MouseLayout> = {}): MouseLayout {
   const columns = overrides.columns ?? 160;
   const sidebarWidth = 32;
@@ -10,7 +10,7 @@ function layout(overrides: Partial<MouseLayout> = {}): MouseLayout {
 
   return {
     columns,
-    rows: 30,
+    rows: 29,
     sidebarWidth,
     bodyHeight: 29,
     panes: paneWidths(columns - sidebarWidth, hasThread),
@@ -27,7 +27,7 @@ function layout(overrides: Partial<MouseLayout> = {}): MouseLayout {
  * message pane's list takes 24 rows (screen rows 1 to 24) and its 3-row input
  * rows 25 to 27; row 0 is the top border and row 28 the bottom one.
  */
-test("the sidebar, the message pane, its input and the status bar", () => {
+test("the sidebar, the message pane and its input", () => {
   const l = layout();
 
   expect(hitTest(l, 0, 0)).toEqual({ area: "sidebar", column: 0, row: -1 });
@@ -44,8 +44,14 @@ test("the sidebar, the message pane, its input and the status bar", () => {
   expect(hitTest(l, 40, 25)).toEqual({ area: "input", column: 8, row: 0 });
   expect(hitTest(l, 40, 27)).toEqual({ area: "input", column: 8, row: 2 });
   expect(hitTest(l, 40, 28)).toEqual({ area: "input", column: 8, row: 3 });
-  expect(hitTest(l, 5, 29)).toEqual({ area: "statusBar", column: 5 });
-  expect(hitTest(l, 159, 29)).toEqual({ area: "statusBar", column: 159 });
+  expect(hitTest(l, 5, 29)).toEqual({ area: "none" });
+});
+
+test("there is no status bar row: the boxes reach the last row of the screen", () => {
+  const l = layout({ rows: 30, bodyHeight: 30 });
+
+  expect(hitTest(l, 5, 29)).toEqual({ area: "sidebar", column: 5, row: 28 });
+  expect(hitTest(l, 40, 29)).toEqual({ area: "input", column: 8, row: 3 });
 });
 
 test("with the thread open the area is shared, each pane with its own input", () => {

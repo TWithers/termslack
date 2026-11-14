@@ -13,7 +13,7 @@ import type { ThreadPane } from "./useThreadPane";
  * What the keys do while an input has the focus: choosing from its
  * completion list, editing the draft, sending it (or saving the edit it
  * holds), Ctrl+T for "also send to channel", and leaving for its list.
- * `report` is the status bar's message line, for why a send failed.
+ * `report` is the status line's message line, for why a send failed.
  */
 export function useInputKeys({
   session,

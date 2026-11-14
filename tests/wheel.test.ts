@@ -8,6 +8,7 @@ import {
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
+import { statusLine } from "./support/panes";
 
 let app: AppHarness | undefined;
 
@@ -97,7 +98,9 @@ async function start(count = 40, rows = 30) {
 }
 
 const screenRows = () => app!.screen().split("\n");
-const statusBar = () => screenRows().at(-1)!;
+const statusBar = () => statusLine(app!.screen());
+/** The thread pane starts at column 96 (sidebar 32, message pane 64) on the 160-column screen. */
+const threadStatus = () => statusLine(app!.screen(), 96);
 const messagesFocused = () => statusBar().includes("j/k select");
 const historyCalls = () =>
   app!.slack.calls.filter((call) => call.method === "conversations.history");
@@ -199,7 +202,7 @@ describe("the thread pane", () => {
     await app!.wheel("up", threadColumn, 10);
     await app!.press("z");
 
-    expect(statusBar()).toContain("Ctrl+T also send");
+    expect(threadStatus()).toContain("Ctrl+T also send");
     expect(app!.screen()).toContain("xyz");
 
     await app!.press(keys.escape);
@@ -208,7 +211,7 @@ describe("the thread pane", () => {
     await app!.wheel("up", threadColumn, 10);
     await app!.wheel("down", threadColumn, 10, 3);
     expect(selectedReply().join()).toContain("second reply");
-    expect(statusBar()).toContain("Esc close thread");
+    expect(threadStatus()).toContain("Esc close thread");
   });
 });
 

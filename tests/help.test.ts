@@ -8,6 +8,7 @@ import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
 
+import { statusLine } from "./support/panes";
 let app: AppHarness;
 
 afterEach(() => app.stop());
@@ -64,7 +65,7 @@ async function openGeneral() {
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusBar = () => statusLine(app.screen());
 const helpIsOpen = () => app.screen().includes("Keyboard shortcuts");
 
 test("? opens the help from the sidebar before any conversation is open, and Esc closes it", async () => {
@@ -238,7 +239,7 @@ test("the help is a large popup, centred over the panes, which stay where they w
 
   expect(width).toBe(128);
   expect(popup.left).toBe(16);
-  expect(height).toBe(31);
+  expect(height).toBe(32);
   expect(popup.top).toBe(4);
 
   const after = app.screen().split("\n");
@@ -287,7 +288,7 @@ test("nothing from the panes shows through the help popup", async () => {
 });
 
 test("in a narrow, short terminal the help popup grows to fill the panes area", async () => {
-  await start({ rows: 14, columns: 40 });
+  await start({ rows: 13, columns: 40 });
   await app.press("?");
 
   const popup = findPopup(app.screen(), "Keyboard shortcuts")!;

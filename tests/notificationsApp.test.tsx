@@ -82,7 +82,7 @@ async function startRunning({
     },
   );
 
-  await waitFor(() => terminal.written().includes("Acme · "));
+  await waitFor(() => terminal.written().includes("● connected"));
   await waitFor(() => harness.session.listingHealth().people === "loaded");
   await waitFor(
     () => harness.session.listingHealth().conversations === "loaded",
@@ -253,7 +253,7 @@ test("by default the bell is written to the terminal's output", async () => {
     },
   );
 
-  await waitFor(() => terminal.written().includes("Acme · "));
+  await waitFor(() => terminal.written().includes("● connected"));
   await say(random);
   await waitFor(() => terminal.written().includes("\x07"));
 

@@ -3,6 +3,7 @@ import { loadPayload } from "./support/fixtures";
 import { waitFor } from "./support/fakeSlack";
 import { sidebarGroups } from "../src/ui/app/sidebarEntries";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
+import { sidebarStatus, statusLine } from "./support/panes";
 
 let app: AppHarness;
 
@@ -105,17 +106,15 @@ test("a channel the user leaves goes, and one they join comes", async () => {
   await app.waitForScreen("#");
 });
 
-test("the status bar shows the workspace, the user and the connection state", async () => {
+test("the sidebar shows the workspace on its top border and the connection on its bottom border, not the user", async () => {
   await start();
 
-  const lastLine = app.screen().trimEnd().split("\n").at(-1)!;
-
-  expect(lastLine).toContain("Acme");
-  expect(lastLine).toContain("egon");
-  expect(lastLine).toContain("connected");
+  expect(app.screen().split("\n")[0]).toContain("Acme");
+  expect(sidebarStatus(app.screen())).toContain("● connected");
+  expect(sidebarStatus(app.screen())).not.toContain("egon");
 });
 
-test("the status bar follows a reconnect", async () => {
+test("the sidebar's connection follows a reconnect", async () => {
   await start({ clientPingTimeout: 50 });
 
   app.slack.send({ type: "disconnect", reason: "refresh_requested" });
@@ -123,9 +122,7 @@ test("the status bar follows a reconnect", async () => {
   await waitFor(() =>
     app.frames().some((frame) => frame.includes("reconnecting")),
   );
-  await waitFor(() =>
-    /\bconnected\b/.test(app.screen().trimEnd().split("\n").at(-1)!),
-  );
+  await waitFor(() => /\bconnected\b/.test(sidebarStatus(app.screen())));
 });
 
 test("the layout fills the terminal and reflows on resize", async () => {
@@ -141,7 +138,7 @@ test("the layout fills the terminal and reflows on resize", async () => {
   expect(
     Math.max(...lines().map((line) => Bun.stringWidth(line))),
   ).toBeLessThanOrEqual(60);
-  expect(lines().at(-1)).toContain("Acme");
+  expect(sidebarStatus(app.screen())).toContain("connected");
 });
 
 test("a narrow, short terminal is never drawn past its edges", async () => {
@@ -231,7 +228,7 @@ test("after Slack asks for a reconnect, new messages still reach the open pane a
   );
 });
 
-test("a failed startup listing shows a warning in the status bar until a retry succeeds", async () => {
+test("a failed startup listing shows a warning on the status line until a retry succeeds", async () => {
   let attempts = 0;
 
   app = await startAppHarness({
@@ -249,13 +246,11 @@ test("a failed startup listing shows a warning in the status bar until a retry s
     },
   });
 
-  const statusLine = () => app.screen().trimEnd().split("\n").at(-1)!;
+  const line = () => statusLine(app.screen());
 
-  await waitFor(() =>
-    statusLine().includes("couldn't load channel list — retrying"),
-  );
+  await waitFor(() => line().includes("couldn't load channel list — retrying"));
   await app.waitForScreen("#general");
-  await waitFor(() => !statusLine().includes("couldn't load"));
+  await waitFor(() => !line().includes("couldn't load"));
 });
 
 test("a listing that runs out of retries leaves a warning without 'retrying'", async () => {
@@ -266,8 +261,6 @@ test("a listing that runs out of retries leaves a warning without 'retrying'", a
   });
 
   await waitFor(() =>
-    /couldn't load people(?! — retrying)/.test(
-      app.screen().trimEnd().split("\n").at(-1)!,
-    ),
+    /couldn't load people(?! — retrying)/.test(statusLine(app.screen())),
   );
 });

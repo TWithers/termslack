@@ -14,7 +14,7 @@ export type LeaveChannelResult = CommandResult;
 export type ChannelLeaves = {
   /** Leaves a public or private channel (see `WorkspaceSession.leaveChannel`). */
   leave(conversationId: string): Promise<LeaveChannelResult>;
-  /** Why the conversation can't be left without asking Slack (not a channel, or a missing scope), in words for the status bar; undefined when it can. */
+  /** Why the conversation can't be left without asking Slack (not a channel, or a missing scope), in words for the status line; undefined when it can. */
   problem(conversationId: string): string | undefined;
 };
 
@@ -33,7 +33,7 @@ function leaveFeature(isPrivate: boolean): ScopedFeature {
   return isPrivate ? "leavePrivate" : "leave";
 }
 
-/** Why leaving a channel was refused, in words for the status bar. */
+/** Why leaving a channel was refused, in words for the status line. */
 export function describeLeaveFailure(
   error: unknown,
   { isPrivate }: { isPrivate: boolean } = { isPrivate: false },

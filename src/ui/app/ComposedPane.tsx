@@ -46,7 +46,8 @@ function Divider({
 export function ComposedPane({
   title,
   meta,
-  status,
+  loadingOlder = false,
+  statusLine,
   focused,
   selection,
   listFocused,
@@ -62,8 +63,10 @@ export function ComposedPane({
   title: string;
   /** On the top border, right: the member count, the person's presence, the reply count. */
   meta?: { text: TitledLabel["text"]; color: string };
-  /** A line about fetching older messages or new messages below, on the bottom border, left (05 gives that border to the status line). */
-  status?: { text: string; color?: string };
+  /** Fetching older messages: on the top border, right, in place of `meta` while it runs. */
+  loadingOlder?: boolean;
+  /** What the bottom border says: a question, notices or keys (see `statusLineLabel`). */
+  statusLine?: TitledLabel;
   /** Whether the pane or its input has focus: the border and title take the focus colour. */
   focused: boolean;
   selection: PaneSelection;
@@ -77,11 +80,17 @@ export function ComposedPane({
   width: number;
   height: number;
 }) {
-  const note =
-    status ??
-    (selection.hasNewBelow
-      ? { text: "↓ new messages below", color: theme.newMessages }
-      : undefined);
+  const topRight: TitledLabel | undefined = loadingOlder
+    ? {
+        text: ["Loading older messages…", "Loading older…"],
+        color: theme.secondaryText,
+      }
+    : selection.hasNewBelow
+      ? {
+          text: ["↓ new messages below", "↓ new"],
+          color: theme.newMessages,
+        }
+      : meta;
   const color = focused ? theme.focus : theme.border;
   const contentWidth = paneContentWidth(width);
   const innerHeight = insideBorder(height);
@@ -95,10 +104,8 @@ export function ComposedPane({
       frame={{ flexShrink: 0 }}
       labels={{
         topLeft: { text: title, color, bold: true },
-        topRight: meta,
-        bottomLeft: note
-          ? { text: note.text, color: note.color ?? theme.secondaryText }
-          : undefined,
+        topRight,
+        bottomLeft: statusLine,
       }}
     >
       <Box

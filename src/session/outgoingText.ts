@@ -7,7 +7,7 @@ const sendFailures: Record<string, string> = {
   rate_limited: "Slack says you're sending too fast. Try again in a moment.",
 };
 
-/** Why a send failed, in words for the status bar. */
+/** Why a send failed, in words for the status line. */
 export function describeSendFailure(error: unknown): string {
   return describeFailure(error, {
     failures: sendFailures,

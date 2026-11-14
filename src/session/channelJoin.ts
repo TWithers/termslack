@@ -24,7 +24,7 @@ const joinFailures: Record<string, string> = {
     "Your account's restrictions don't let you join channels.",
 };
 
-/** Why joining a channel was refused, in words for the status bar. */
+/** Why joining a channel was refused, in words for the status line. */
 export function describeJoinFailure(error: unknown): string {
   return describeFailure(error, {
     failures: joinFailures,

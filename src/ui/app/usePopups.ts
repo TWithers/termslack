@@ -33,7 +33,7 @@ import { useThemePicker } from "./useThemePicker";
  * prompt, the theme picker, the channel menu, the channel details, and the join and leave questions. `handleKey` is where the order
  * between them is decided. The app says what choosing something in the
  * switcher or the search does (`chooseConversation`, `openSearchResult`) and
- * what a joined channel does (`openJoined`); `report` is the status bar's
+ * what a joined channel does (`openJoined`); `report` is the status line's
  * message line, `opens` counts conversation opens (see `useJoinPrompt`).
  */
 export function usePopups({
@@ -65,7 +65,7 @@ export function usePopups({
 }) {
   const reactionPrompt = useReactionPrompt({ session, report });
   const sectionPrompt = useSectionPrompt({ session });
-  const bodyHeight = Math.max(0, rows - 1);
+  const bodyHeight = rows;
   const help = useHelp(
     overlayInnerHeight("large", columns, bodyHeight),
     overlayInnerWidth("large", columns, bodyHeight),
@@ -310,7 +310,7 @@ export function usePopups({
       leavePrompt.cancel();
     },
 
-    /** The rows left for the panes: the screen less the status bar and the reaction prompt. */
+    /** The rows left for the panes: the whole screen: the boxes fill it. */
     bodyHeight,
     help,
     switcher,
@@ -326,10 +326,10 @@ export function usePopups({
     /** Whether a popup covers the panes with a full-size overlay, so the panes aren't on screen. */
     isLargeOpen: help.isOpen || search.isOpen,
 
-    /** The question the status bar asks, if a join or leave is pending. */
+    /** The question the status line asks, if a join or leave is pending. */
     prompt: joinPrompt.prompt ?? leavePrompt.prompt,
 
-    /** Whether any popup is open, so the keys of the panes behind it are not what the status bar should teach. */
+    /** Whether any popup is open, so the keys of the panes behind it are not what the status line should teach. */
     isOpen:
       help.isOpen ||
       switcher.isOpen ||
@@ -340,7 +340,7 @@ export function usePopups({
       reactionPrompt.isOpen ||
       sectionPrompt.isOpen,
 
-    /** Opens the search, or says in the status bar why it can't be. */
+    /** Opens the search, or says in the status line why it can't be. */
     openSearch() {
       const problem = session.scopeProblem("search");
 

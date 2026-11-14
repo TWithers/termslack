@@ -23,7 +23,7 @@ const startFailures: Record<string, string> = {
   cannot_dm_bot: "Slack doesn't allow direct messages with that bot.",
 };
 
-/** Why starting a DM was refused, in words for the status bar. */
+/** Why starting a DM was refused, in words for the status line. */
 export function describeStartFailure(error: unknown): string {
   return describeFailure(error, {
     failures: startFailures,

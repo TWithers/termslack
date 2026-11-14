@@ -1,6 +1,6 @@
 /**
  * What a session command answers. Never rejects: a refusal says why in words
- * fit for the status bar. `Done` is what a success carries.
+ * fit for the status line. `Done` is what a success carries.
  */
 export type CommandResult<Done extends object = object> =
   ({ ok: true } & Done) | { ok: false; message: string };

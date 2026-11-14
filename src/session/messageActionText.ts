@@ -31,17 +31,17 @@ function describeMessageFailure(
   });
 }
 
-/** Why an edit was refused, in words for the status bar. */
+/** Why an edit was refused, in words for the status line. */
 export function describeEditFailure(error: unknown): string {
   return describeMessageFailure(error, editFailures, "edit");
 }
 
-/** Why a delete was refused, in words for the status bar. */
+/** Why a delete was refused, in words for the status line. */
 export function describeDeleteFailure(error: unknown): string {
   return describeMessageFailure(error, deleteFailures, "delete");
 }
 
-/** Why adding or removing a reaction was refused, in words for the status bar. */
+/** Why adding or removing a reaction was refused, in words for the status line. */
 export function describeReactionFailure(
   error: unknown,
   verb: "add" | "remove",

@@ -7,6 +7,7 @@ import { applyTheme, defaultThemeName, theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
+import { statusLine } from "./support/panes";
 
 let app: AppHarness;
 let colourLevel: typeof chalk.level;
@@ -92,7 +93,9 @@ const authorColourCode = () =>
       .at(-1)!,
   )![1];
 const popupRows = () => findPopup(app.screen(), title)?.rows ?? [];
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const coloredSidebarStatus = () =>
+  app.coloredScreen().findLast((row) => Bun.stripANSI(row).startsWith("╰"))!;
+const statusBar = () => statusLine(app.screen());
 const listed = () =>
   popupRows()
     .slice(1)
@@ -177,7 +180,7 @@ test("the help lists T", async () => {
   expect(app.screen()).toContain("Choose the theme");
 });
 
-test("moving the highlighted row repaints the sidebar, a message row, the status bar and the popup in that theme", async () => {
+test("moving the highlighted row repaints the sidebar, a message row, the connection on the sidebar border and the popup in that theme", async () => {
   await start();
   await openGeneral();
 
@@ -203,8 +206,9 @@ test("moving the highlighted row repaints the sidebar, a message row, the status
   expect(message).not.toContain(colourCode(48, before.paneBackground));
   expect(message).not.toContain(colourCode(38, before.text));
   expect(authorColourCode()).not.toBe(authorBefore);
-  expect(app.coloredScreen().at(-1)).toContain(
-    colourCode(48, theme.statusBarBackground),
+  expect(coloredSidebarStatus()).toContain(colourCode(38, theme.connected));
+  expect(coloredSidebarStatus()).toContain(
+    colourCode(48, theme.sidebarBackground),
   );
   expect(rowWith(title)).toContain(colourCode(48, theme.popupBackground));
   expect(rowWith("catppuccin")).toContain(

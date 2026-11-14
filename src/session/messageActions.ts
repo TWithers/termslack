@@ -14,7 +14,7 @@ import {
   describeEditFailure,
 } from "./messageActionText";
 
-/** Never rejects: a refusal says why in words fit for the status bar. */
+/** Never rejects: a refusal says why in words fit for the status line. */
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
 export type MessageRef = { conversationId: string; ts: string };

@@ -8,6 +8,7 @@ import {
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
+import { statusLine } from "./support/panes";
 
 let app: AppHarness | undefined;
 
@@ -83,7 +84,7 @@ async function start() {
 }
 
 const screenRows = () => app!.screen().split("\n");
-const statusBar = () => screenRows().at(-1)!;
+const statusBar = () => statusLine(app!.screen());
 const paneText = () =>
   screenRows()
     .map((line) => line.slice(sidebarWidth))

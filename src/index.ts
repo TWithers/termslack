@@ -66,7 +66,7 @@ function resolveOptions(): Options {
 
 const options = resolveOptions();
 
-/** The workspace and user a token belongs to, for the status bar. */
+/** The workspace and user a token belongs to, for the sidebar and status line. */
 async function describeToken(
   userToken: string,
 ): Promise<{ workspaceName: string; userName?: string }> {
@@ -259,7 +259,7 @@ async function printHistory(
 }
 
 async function main(): Promise<void> {
-  const { session, workspaceName, userName, teamId, recentDms, sections, log } =
+  const { session, workspaceName, teamId, recentDms, sections, log } =
     await connect();
 
   if (!log) {
@@ -270,7 +270,6 @@ async function main(): Promise<void> {
       {
         session,
         workspaceName,
-        userName,
         recentDms: recentDmLimit(recentDms),
         conversationMemory: teamId
           ? workspaceConversationMemory(teamId)

@@ -4,7 +4,7 @@ import {
   sidebarKeyHints,
   threadInputKeyHints,
   threadKeyHints,
-} from "./StatusBar";
+} from "./statusLine";
 
 /** The two lists of messages, whose selected message keys act on. */
 export type ListPane = "messages" | "thread";

@@ -10,7 +10,7 @@ import {
  * The "Join #name? y/n" question the quick switcher leads to for a public
  * channel the user isn't in. `join` is called with the channel once it is
  * joined, unless the user opened another conversation meanwhile (`opens`
- * counts those), and `report` is the status bar's message line, for why Slack
+ * counts those), and `report` is the status line's message line, for why Slack
  * refused.
  */
 export function useJoinPrompt({

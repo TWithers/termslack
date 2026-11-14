@@ -243,7 +243,7 @@ test("a missing scope is explained", async () => {
 
   const screen = await app.waitForScreen("chat:write");
 
-  expect(screen).toContain("setup");
+  expect(screen).toContain("Sending needs the chat:write permission");
 });
 
 test("a draft stays with its conversation when switching away and back", async () => {

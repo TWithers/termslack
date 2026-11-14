@@ -14,7 +14,7 @@ export type Sections = {
   shown(): SectionConfig[];
   /** Whether termslack keeps the sections (in the state file) and `config.toml`'s are ignored. */
   keptByTermslack(): boolean;
-  /** The one-time note for the status bar, set when termslack takes the sections over. */
+  /** The one-time note for the status line, set when termslack takes the sections over. */
   note(): string | undefined;
   /** Puts a channel in a section (taking it out of any other). Fails when no section has that name. */
   moveToSection(channelId: string, sectionName: string): SectionChange;

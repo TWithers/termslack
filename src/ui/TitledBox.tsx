@@ -12,6 +12,8 @@ export type TitledLabel = {
   text: BorderLabel;
   color: string;
   bold?: boolean;
+  /** The start of the label (every form begins with it) drawn in its own colour, the rest in `color`. */
+  lead?: { text: string; color: string };
 };
 
 export type TitledBoxLabels = {
@@ -22,6 +24,21 @@ export type TitledBoxLabels = {
 };
 
 type Place = keyof TitledBoxLabels;
+
+/** How much of `text` is the label's lead (all of it, or the part a cut left). */
+function leadLength(text: string, lead: TitledLabel["lead"]): number {
+  if (!lead) {
+    return 0;
+  }
+
+  let length = 0;
+
+  while (length < text.length && text[length] === lead.text[length]) {
+    length++;
+  }
+
+  return length;
+}
 
 const places: Record<
   Place,
@@ -99,7 +116,17 @@ export function TitledBox({
               bold={label.bold}
               backgroundColor={background}
             >
-              {` ${text} `}
+              {" "}
+              {leadLength(text, label.lead) > 0 ? (
+                <>
+                  <Text color={label.lead!.color}>
+                    {text.slice(0, leadLength(text, label.lead))}
+                  </Text>
+                  {text.slice(leadLength(text, label.lead))}
+                </>
+              ) : (
+                text
+              )}{" "}
             </Text>
           </Box>
         );

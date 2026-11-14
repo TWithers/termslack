@@ -11,7 +11,7 @@ export type DoNotDisturb = {
   /** Whether Do Not Disturb is on right now: snoozing, or inside a scheduled window. False when Slack's answer isn't known. */
   isOn(): boolean;
   /**
-   * Why Do Not Disturb isn't being followed, in words for the status bar,
+   * Why Do Not Disturb isn't being followed, in words for the status line,
    * until an answer from Slack arrives; undefined when it is being followed.
    */
   note(): string | undefined;

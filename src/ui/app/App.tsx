@@ -9,7 +9,6 @@ import type {
 } from "../../config/state";
 import { replyParentOf } from "../../session/events";
 import { describeHistoryFailure } from "../../session/failureText";
-import { personName } from "../../session/people";
 import { compareTs } from "../../session/workspaceStore";
 import { useComposer } from "../input/useComposer";
 import { draftKey, useDrafts } from "../input/useDrafts";
@@ -50,9 +49,9 @@ import {
 import {
   editKeyHints,
   sidebarKeyHints,
-  StatusBar,
+  statusLineLabel,
   statusWarning,
-} from "./StatusBar";
+} from "./statusLine";
 import {
   type Conversation,
   isChannel,
@@ -95,8 +94,6 @@ export type AppProps = {
   /** A started session. The app disconnects it when it quits. */
   session: WorkspaceSession;
   workspaceName: string;
-  /** Shown in the status bar until the store knows the user's name. */
-  userName?: string;
   /** The current time, for labels like "Today". Defaults to the real clock. */
   now?: () => Date;
   /**
@@ -111,7 +108,7 @@ export type AppProps = {
   collapseMemory?: CollapseMemory;
   /** Where the choice to hide muted channels is remembered between runs. Default: nothing is remembered. */
   hideMutedMemory?: HideMutedMemory;
-  /** A one-time note for the status bar from outside the app (for instance, that desktop notifications can't be shown). */
+  /** A one-time note for the status line from outside the app (for instance, that desktop notifications can't be shown). */
   notice?: Notice;
   /** Saves the theme chosen in the theme picker (as the config's `theme`). Default: it is only kept for this run. */
   saveTheme?: (name: string) => Promise<void>;
@@ -175,11 +172,10 @@ function conversationMetaOf(
   };
 }
 
-/** The whole terminal UI: sidebar and main pane side by side, with the status bar underneath. */
+/** The whole terminal UI: sidebar and main pane side by side, with the status line on the message pane's bottom border. */
 export function App({
   session,
   workspaceName,
-  userName,
   now = () => new Date(),
   conversationMemory,
   recentDms = defaultRecentDms,
@@ -439,7 +435,7 @@ export function App({
    * history is loaded back to it (a reply's thread parent, for a reply) and
    * the view moves to it once it is there. A reply also opens its thread with
    * the reply selected and focused. A message that is gone leaves the
-   * conversation open at the nearest message with a note in the status bar.
+   * conversation open at the nearest message with a note on the status line.
    * A public channel the user isn't in opens read-only.
    */
   async function openSearchResult({ message }: SearchResult) {
@@ -893,10 +889,6 @@ export function App({
     }
   });
 
-  const currentUserId = session.currentUserId;
-  const user = currentUserId
-    ? personName(session.user(currentUserId), currentUserId)
-    : undefined;
   const openEntry = lines.find(
     (line) => line.kind === "entry" && line.entry.conversation.id === openId,
   );
@@ -929,6 +921,37 @@ export function App({
         }
       : undefined;
 
+  const older = olderStatusText(openHistory);
+  const question = actions.prompt ?? popups.prompt;
+  const notices = [
+    statusMessage,
+    statusWarning(
+      session.listingHealth(),
+      session.sectionsKeptByTermslack() ? [] : groups.unknownChannels,
+    ),
+    older?.failed ? older.text : undefined,
+  ];
+  const focusKeys = popups.isOpen
+    ? undefined
+    : focusedEdit
+      ? editKeyHints
+      : focus === "sidebar"
+        ? sidebarKeyHints(hideMuted)
+        : paneKeyHints[focus];
+  const threadHasFocus = focus === "thread" || focus === "threadInput";
+  /** The message pane carries the status line; the thread pane does while it covers the message pane. */
+  const messagesStatus = statusLineLabel({
+    question,
+    notices,
+    keys: threadHasFocus ? undefined : focusKeys,
+  });
+  const threadStatus = widths.showMessages
+    ? statusLineLabel({
+        notices: [],
+        keys: threadHasFocus ? focusKeys : undefined,
+      })
+    : statusLineLabel({ question, notices, keys: focusKeys });
+
   return (
     <Box
       flexDirection="column"
@@ -945,6 +968,9 @@ export function App({
       >
         <Sidebar
           workspaceName={workspaceName}
+          connection={session.status}
+          hideMuted={hideMuted}
+          unreadProgress={session.unreadCheckProgress()}
           lines={lines}
           start={scrollStart.current}
           selectedId={selectedId}
@@ -960,7 +986,8 @@ export function App({
           <ComposedPane
             title={openLabel}
             meta={conversationMeta}
-            status={olderStatusText(openHistory)}
+            loadingOlder={older !== undefined && !older.failed}
+            statusLine={messagesStatus}
             focused={focus === "messages" || focus === "input"}
             selection={messages}
             listFocused={focus === "messages"}
@@ -985,6 +1012,7 @@ export function App({
                 color: theme.border,
                 bold: true,
               },
+              bottomLeft: messagesStatus,
             }}
           />
         ) : null}
@@ -992,6 +1020,7 @@ export function App({
           <ComposedPane
             title="Thread"
             meta={replyCountMeta}
+            statusLine={threadStatus}
             focused={focus === "thread" || focus === "threadInput"}
             selection={thread.selection}
             listFocused={focus === "thread"}
@@ -1017,27 +1046,6 @@ export function App({
           height={bodyHeight}
         />
       </Box>
-      <StatusBar
-        workspaceName={workspaceName}
-        userName={user ?? userName ?? "…"}
-        status={session.status}
-        warning={statusWarning(
-          session.listingHealth(),
-          session.sectionsKeptByTermslack() ? [] : groups.unknownChannels,
-        )}
-        unreadProgress={session.unreadCheckProgress()}
-        message={statusMessage}
-        prompt={actions.prompt ?? popups.prompt}
-        hints={
-          popups.isOpen
-            ? undefined
-            : focusedEdit
-              ? editKeyHints
-              : focus === "sidebar"
-                ? sidebarKeyHints(hideMuted)
-                : paneKeyHints[focus]
-        }
-      />
     </Box>
   );
 }

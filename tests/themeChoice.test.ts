@@ -63,7 +63,7 @@ test.each(["nord", "catppuccin-latte"])(
       backgroundCode(theme.sidebarBackground),
     );
     expect(app.coloredScreen().at(-1)).toContain(
-      backgroundCode(theme.statusBarBackground),
+      backgroundCode(theme.sidebarBackground),
     );
     expect(app.coloredScreen().join("\n")).toContain(
       backgroundCode(theme.paneBackground),
@@ -91,7 +91,7 @@ async function startRunning(themeName?: string) {
     await finished;
   };
 
-  await waitFor(() => terminal.written().includes("Acme · "));
+  await waitFor(() => terminal.written().includes("● connected"));
 
   return { terminal };
 }

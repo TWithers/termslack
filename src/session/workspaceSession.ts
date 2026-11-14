@@ -321,7 +321,7 @@ export type WorkspaceSession = {
    * `threadReplies`) as pending and becomes the confirmed message when
    * Slack's response or its socket echo arrives, whichever is first, never
    * twice. Blank text isn't sent. Never rejects: a failure says why in words
-   * fit for the status bar and leaves the message marked `failed`.
+   * fit for the status line and leaves the message marked `failed`.
    */
   sendMessage(request: SendRequest): Promise<SendResult>;
   /**
@@ -339,11 +339,11 @@ export type WorkspaceSession = {
    * races the answer, so the sidebar lists it once. A channel the store knows
    * the user is in returns without calling Slack. Never rejects: a missing
    * `channels:write` scope or a Slack refusal says why in words fit for the
-   * status bar and changes nothing.
+   * status line and changes nothing.
    */
   joinChannel(conversationId: string): Promise<ConversationResult>;
   /**
-   * Why a conversation can't be joined or left, in words for the status bar:
+   * Why a conversation can't be joined or left, in words for the status line:
    * the token lacks the scope (`channels:write`, or `groups:write` to leave a
    * private channel), or it isn't a channel to leave; undefined when it can.
    * Never calls Slack.
@@ -358,7 +358,7 @@ export type WorkspaceSession = {
    * races the answer; a channel it knows the user is out of returns without
    * calling Slack. Never rejects: a missing scope, a DM, or a Slack refusal
    * (`cant_leave_general`, `last_member`, ...) says why in words fit for the
-   * status bar and changes nothing.
+   * status line and changes nothing.
    */
   leaveChannel(conversationId: string): Promise<LeaveChannelResult>;
   /**
@@ -380,7 +380,7 @@ export type WorkspaceSession = {
   sections(): SectionConfig[];
   /** Whether termslack keeps the sections, so `config.toml`'s are ignored. */
   sectionsKeptByTermslack(): boolean;
-  /** The note for the status bar, once, when the first change took the sections over; undefined until then and in later runs. */
+  /** The note for the status line, once, when the first change took the sections over; undefined until then and in later runs. */
   sectionsNote(): string | undefined;
   /**
    * Puts a channel in a section, taking it out of any other, and redraws at
@@ -417,7 +417,7 @@ export type WorkspaceSession = {
   publicChannelsStatus(): PublicChannelsStatus;
   /**
    * Why the current user can't edit or delete a message (it isn't theirs, or
-   * isn't sent yet), in words for the status bar; undefined when they can.
+   * isn't sent yet), in words for the status line; undefined when they can.
    */
   modifyProblem(
     message: MessageRef,
@@ -437,7 +437,7 @@ export type WorkspaceSession = {
    * Slack refuses it comes back and the result says why. Never rejects.
    */
   deleteMessage(request: MessageRef): Promise<ActionResult>;
-  /** Why the message can't be reacted to (it isn't stored, so it is still sending), in words for the status bar; undefined when it can. */
+  /** Why the message can't be reacted to (it isn't stored, so it is still sending), in words for the status line; undefined when it can. */
   reactionProblem(message: MessageRef): string | undefined;
   /** Whether the current user has reacted to the message with that emoji (`tada`, `:tada:`, `+1::skin-tone-2`). Never calls Slack. */
   hasReacted(message: MessageRef, name: string): boolean;
@@ -565,7 +565,7 @@ export type WorkspaceSession = {
   subscribeToNotifications(listener: NotificationListener): () => void;
   /**
    * Why Do Not Disturb isn't being followed (it couldn't be read, or the
-   * token lacks `dnd:read`), in words for the status bar; undefined while it
+   * token lacks `dnd:read`), in words for the status line; undefined while it
    * is. Changes are announced like any other (`subscribeToChanges`).
    */
   dndNote(): string | undefined;

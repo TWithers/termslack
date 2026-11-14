@@ -16,10 +16,14 @@ import {
   sidebarLines,
 } from "../src/ui/app/sidebarEntries";
 import { shortcuts } from "../src/ui/app/shortcuts";
-import { sidebarKeyHints } from "../src/ui/app/StatusBar";
+import { sidebarKeyHints } from "../src/ui/app/statusLine";
 import { theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
-import { sidebarRows as readSidebarRows } from "./support/panes";
+import {
+  sidebarRows as readSidebarRows,
+  sidebarStatus,
+  statusLine,
+} from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 
 let app: AppHarness;
@@ -115,7 +119,7 @@ const rowOf = (name: string) =>
 const screenRowOf = (name: string) => rowOf(name) + 1;
 const isListed = (name: string) => rowOf(name) !== -1;
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusBar = () => statusLine(app.screen());
 
 async function selectRow(name: string) {
   const selectedIndex = () =>
@@ -169,16 +173,18 @@ describe("hiding muted channels from the keyboard", () => {
     expect(isListed("#random")).toBe(true);
   });
 
-  test("the sidebar hints name the key, and say 'muted hidden' while they are hidden", async () => {
+  test("the sidebar hints name the key, and the sidebar's border says 'muted hidden' while they are hidden", async () => {
     await start({ muteMemory: muteMemory([general]) });
 
-    expect(statusBar()).toContain(sidebarKeyHints(false));
-    expect(statusBar()).not.toContain("muted hidden");
+    expect(sidebarKeyHints(false)).toContain("M hide muted");
+    expect(statusBar()).toContain("M hide muted");
+    expect(sidebarStatus(app.screen())).not.toContain("muted hidden");
 
     await app.press("M");
 
-    expect(statusBar()).toContain(sidebarKeyHints(true));
-    expect(statusBar()).toContain("muted hidden");
+    expect(sidebarKeyHints(true)).toContain("M show muted");
+    expect(statusBar()).toContain("M show muted");
+    expect(sidebarStatus(app.screen())).toContain("muted hidden");
   });
 
   test("Help lists M under the sidebar keys", () => {

@@ -3,6 +3,7 @@ import { applyTheme, defaultThemeName, theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup, type Popup } from "./support/popup";
+import { sidebarStatus, statusLine } from "./support/panes";
 
 let app: AppHarness;
 
@@ -88,16 +89,16 @@ describe("a popup's title is on its top border and its keys on its bottom border
     expect(box.bottomBorder).toContain("Esc close");
   });
 
-  test("the status bar no longer shows a popup's keys", async () => {
+  test("the status line shows no keys while a popup is open", async () => {
     await start();
     await app.press(keys.ctrlK);
     await app.waitForScreen("Switch conversation");
 
-    const statusBar = app.screen().trimEnd().split("\n").at(-1)!;
+    const line = statusLine(app.screen());
 
-    expect(statusBar).toContain("Acme");
-    expect(statusBar).not.toContain("Enter open");
-    expect(statusBar).not.toContain("j/k move");
+    expect(sidebarStatus(app.screen())).toContain("● connected");
+    expect(line).not.toContain("Enter open");
+    expect(line).not.toContain("j/k move");
   });
 });
 

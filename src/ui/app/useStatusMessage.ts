@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The status bar's message line: why the last action failed, a hint, or a
+ * The status line's message line: why the last action failed, a hint, or a
  * one-time note. `show(undefined)` clears it. Each of `notes` (for instance
  * that Do Not Disturb is on, or that desktop notifications can't be shown)
  * is shown when it appears or changes, unless a message is already up; the

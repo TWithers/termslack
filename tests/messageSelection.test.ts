@@ -57,7 +57,7 @@ async function start(
 ) {
   app = await startAppHarness({
     columns: 100,
-    rows: 15,
+    rows: 14,
     ...options,
     prepare: (slack) => {
       slack.respondPaged("conversations.history", pages);

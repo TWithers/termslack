@@ -29,7 +29,7 @@ export type MouseLayout = {
   columns: number;
   rows: number;
   sidebarWidth: number;
-  /** Rows above the status bar: the sidebar's and the panes' boxes, borders included. */
+  /** Rows the sidebar's and the panes' boxes take, borders included (the whole screen). */
   bodyHeight: number;
   /** The panes beside the sidebar: the message pane first when it is drawn, then the thread pane. */
   panes: PaneWidths;
@@ -46,7 +46,6 @@ export type MouseLayout = {
 /** What is under a point, with the point relative to that thing's top left. */
 export type Hit =
   | { area: "none" }
-  | { area: "statusBar"; column: number }
   | {
       /**
        * The sidebar: `row` counts from its first line inside the border (0;
@@ -108,7 +107,7 @@ function hitPane(
 
 /**
  * What is at `column`, `row`: a popup first, since it is drawn over
- * everything, then the status bar, the sidebar, and the panes with their
+ * everything, then the sidebar, and the panes with their
  * input boxes. The space where a pane would be with no conversation open,
  * and anywhere off the screen, is nothing.
  */
@@ -126,10 +125,6 @@ export function hitTest(layout: MouseLayout, column: number, row: number): Hit {
       column: column - popup.frame.left,
       row: row - popup.frame.top,
     };
-  }
-
-  if (row === rows - 1) {
-    return { area: "statusBar", column };
   }
 
   if (row >= bodyHeight) {

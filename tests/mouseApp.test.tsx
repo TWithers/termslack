@@ -8,6 +8,7 @@ import {
   startAppHarness,
 } from "./support/appHarness";
 import { fakeTerminal } from "./support/fakeTerminal";
+import { statusLine } from "./support/panes";
 import { waitFor } from "./support/fakeSlack";
 import {
   type SessionHarness,
@@ -57,24 +58,27 @@ const replies = [
 ];
 
 const hints = {
-  sidebar: "Acme · ",
-  messages: "i write · ? help",
-  input: "Enter send · Alt+Enter",
+  sidebar: "j/k move",
+  messages: "i write",
+  input: "Enter send",
   thread: "Esc close thread",
   threadInput: "Ctrl+T also send",
 };
 
-const statusBar = () => app!.screen().split("\n").at(-1)!;
+/** The message pane's status line (columns 32 to 96 of 160, where the thread pane starts) and the thread pane's. */
+const messagesStatus = () => statusLine(app!.screen(), 32, 96);
+const threadStatus = () => statusLine(app!.screen(), 96);
 
-/** Which pane has focus, read from the key hints in the status bar. */
+/** Which pane has focus, read from the key hints on the status line and the thread pane's border. */
 function focused() {
-  const bar = statusBar();
+  const thread = threadStatus();
+  const bar = messagesStatus();
 
-  if (bar.includes(hints.thread)) {
+  if (thread.includes(hints.thread)) {
     return "thread";
   }
 
-  if (bar.includes(hints.threadInput)) {
+  if (thread.includes(hints.threadInput)) {
     return "threadInput";
   }
 
@@ -145,9 +149,8 @@ test("a click on the thread pane and its input box moves focus there", async () 
   expect(focused()).toBe("input");
 });
 
-test("clicking the status bar, empty space and with other buttons does nothing", async () => {
+test("clicking with other buttons does nothing", async () => {
   await start();
-  await app!.click(5, 29);
   expect(focused()).toBe("messages");
 
   await app!.mouse(sgrMouse(2, 5, 5, "M"));
@@ -184,7 +187,7 @@ async function startRunning() {
     },
   );
 
-  await waitFor(() => terminal.written().includes("Acme · "));
+  await waitFor(() => terminal.written().includes("● connected"));
   await waitFor(() => session!.session.listingHealth().people === "loaded");
   await waitFor(
     () => session!.session.listingHealth().conversations === "loaded",

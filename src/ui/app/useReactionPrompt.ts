@@ -41,7 +41,7 @@ export type ReactionPrompt = {
  * tone, say), Enter reacts with the chosen match, or with exactly what was
  * typed when nothing matches; Esc cancels. Reacting removes the reaction
  * instead when the user already has it, which `choice` says beforehand.
- * `report` is the status bar's message line, for why Slack refused.
+ * `report` is the status line's message line, for why Slack refused.
  */
 export function useReactionPrompt({
   session,

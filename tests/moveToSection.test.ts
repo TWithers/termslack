@@ -291,7 +291,7 @@ test("the first change from the menu shows the one-time note", async () => {
   await openList("#general");
   await app.press("2");
 
-  await app.waitForScreen(sectionsNote);
+  await app.waitForScreen("Sections are now kept by termslack");
   expect(app.session.sectionsNote()).toBe(sectionsNote);
 });
 

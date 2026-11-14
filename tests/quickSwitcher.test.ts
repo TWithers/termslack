@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { loadPayload } from "./support/fixtures";
 import { waitFor } from "./support/fakeSlack";
 import { findPopup } from "./support/popup";
+import { statusLine } from "./support/panes";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 
 let app: AppHarness;
@@ -89,7 +90,7 @@ async function say(channel: string, overrides: Record<string, unknown> = {}) {
   });
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusBar = () => statusLine(app.screen());
 const switcherIsOpen = () => app.screen().includes("Switch conversation");
 
 /** The switcher's result rows, without the highlight marker. */
@@ -403,7 +404,7 @@ test("the switcher is a compact popup near the top over the panes, which stay wh
 
   expect(popup.right - popup.left).toBe(60);
   expect(popup.left).toBe(20);
-  expect(popup.top).toBe(7);
+  expect(popup.top).toBe(8);
   // The filter line and one row per result, up to ten.
   expect(popup.rows.length).toBe(1 + results().length);
   expect(popup.rows.length).toBeLessThanOrEqual(11);

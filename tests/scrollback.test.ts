@@ -62,7 +62,7 @@ async function start(
 ) {
   app = await startAppHarness({
     columns: 100,
-    rows: 15,
+    rows: 14,
     ...options,
     prepare: (slack) => {
       slack.respondPaged("conversations.history", pages);
@@ -78,8 +78,8 @@ const lines = () => app.screen().split("\n");
 const paneLines = () =>
   lines().map((line) => line.slice(33).replace(/ *│$/, ""));
 
-/** The boxes' bottom border row, where "new messages below" is shown. */
-const bottomBorder = () => lines().find((line) => line.startsWith("╰")) ?? "";
+/** The boxes' top border row, where "new messages below" is shown (top right of the message pane). */
+const topBorder = () => lines()[0] ?? "";
 
 /** Whether the message pane's box is drawn in the focus colour, read from its title on the top border. */
 const paneFocused = () =>
@@ -355,7 +355,7 @@ test("while scrolled up new messages don't move the view, and a hint says they'r
   await app.press("k");
   await app.press("k");
 
-  expect(bottomBorder()).not.toMatch(/new messages below/i);
+  expect(topBorder()).not.toMatch(/new messages below/i);
 
   await sendLive(31);
   await app.waitForScreen("new messages below");
@@ -366,7 +366,7 @@ test("while scrolled up new messages don't move the view, and a hint says they'r
   await Bun.sleep(40);
 
   expect(visible()).toEqual(range(21, 30));
-  expect(bottomBorder()).toMatch(/new messages below/i);
+  expect(topBorder()).toMatch(/new messages below/i);
 
   await app.press("G");
 
@@ -431,7 +431,7 @@ test("a 2,000 message conversation renders only its window and scrolls without l
   await app.waitForScreen(num(2000));
   await app.press(keys.tab);
 
-  expect(lines()).toHaveLength(15);
+  expect(lines()).toHaveLength(14);
   expect(visible()).toEqual(range(1991, 2000));
 
   const slowest = { ms: 0 };

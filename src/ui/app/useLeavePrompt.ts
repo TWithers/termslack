@@ -8,7 +8,7 @@ import {
 /**
  * The "Leave #name? y/n" question `x` on a sidebar channel leads to. Leaving a
  * private channel says that it can't be rejoined without an invite. `report`
- * is the status bar's message line, for why a channel can't be left or why
+ * is the status line's message line, for why a channel can't be left or why
  * Slack refused; the channel disappears from the sidebar through the session.
  */
 export function useLeavePrompt({
