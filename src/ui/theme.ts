@@ -12,8 +12,6 @@ export type Theme = {
   sidebarBackground: string;
   /** A small step from the sidebar's background: what a sidebar entry or section heading shows under the mouse. */
   sidebarHoverBackground: string;
-  inputBoxBackground: string;
-  statusBarBackground: string;
   popupBackground: string;
 
   /** Ordinary text on every background. */
@@ -25,8 +23,6 @@ export type Theme = {
   /** Unread sidebar entries and the text that should stand out. */
   brightText: string;
   sidebarHeadingText: string;
-  statusBarText: string;
-  statusBarSecondaryText: string;
 
   /** The focused sidebar's selected row, and a popup's highlighted row. */
   selectionBackground: string;
@@ -117,8 +113,6 @@ export const slackDark: Theme = {
   paneBackground: "#1a1d21",
   sidebarBackground: "#19171d",
   sidebarHoverBackground: "#27242c",
-  inputBoxBackground: "#222529",
-  statusBarBackground: "#121016",
   popupBackground: "#222529",
 
   text: "#d1d2d3",
@@ -126,8 +120,6 @@ export const slackDark: Theme = {
   mutedChannelText: "#8a8b8f",
   brightText: "#ffffff",
   sidebarHeadingText: "#b9bbbe",
-  statusBarText: "#d1d2d3",
-  statusBarSecondaryText: "#9a9b9e",
 
   selectionBackground: "#1164a3",
   selectionText: "#ffffff",

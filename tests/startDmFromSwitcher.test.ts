@@ -103,7 +103,7 @@ async function start({
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 const switcherIsOpen = () => app.screen().includes("Switch conversation");
 const switcherTitle = () =>
   app
@@ -188,7 +188,7 @@ test("picking a person without a DM opens it with conversations.open, adds it to
   expect(openCalls().map((call) => call.params)).toEqual([{ users: ray }]);
   expect(switcherIsOpen()).toBe(false);
   expect(app.screen()).toContain("›▌ @Ray");
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
   expect(sidebarRows().filter((row) => row.includes("@Ray"))).toHaveLength(1);
 
   await app.press(keys.ctrlK);
@@ -210,7 +210,7 @@ test("the new DM shows in the sidebar even when it would fall outside the recent
   expect(sidebarRows().some((row) => row.includes("@Ray"))).toBe(true);
 });
 
-test("without im:write the person still shows, and picking them explains in the status bar without calling Slack", async () => {
+test("without im:write the person still shows, and picking them explains in the status line without calling Slack", async () => {
   await start({ scopes: ["identify", "chat:write", "reactions:write"] });
   await app.press(keys.ctrlK);
   await type("ray");
@@ -220,8 +220,8 @@ test("without im:write the person still shows, and picking them explains in the 
   await app.press(keys.enter);
 
   expect(switcherIsOpen()).toBe(false);
-  expect(statusBar()).toContain("Starting direct messages is off");
-  expect(statusBar()).toContain("im:write");
+  expect(statusLineText()).toContain("Starting direct messages is off");
+  expect(statusLineText()).toContain("im:write");
   expect(openCalls()).toHaveLength(0);
   expect(app.session.conversation(newDm)).toBeUndefined();
 });
@@ -238,7 +238,7 @@ test("Slack refusing shows the reason, closes the switcher and changes nothing",
   await app.waitForScreen("deactivated");
 
   expect(switcherIsOpen()).toBe(false);
-  expect(statusBar()).toContain("deactivated");
+  expect(statusLineText()).toContain("deactivated");
   expect(app.session.conversations()).toHaveLength(before);
   expect(sidebarRows().some((row) => row.includes("@Ray"))).toBe(false);
 });

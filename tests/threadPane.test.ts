@@ -249,7 +249,7 @@ test("Tab cycles sidebar, messages, input, thread, thread input; Esc closes the 
   expect(focusedTitles()).toEqual(["#general"]);
 });
 
-test("the status bar shows thread keys while the thread has focus", async () => {
+test("the status line shows thread keys while the thread has focus", async () => {
   await start();
   await openThread();
   await app.waitForScreen("reply 3");

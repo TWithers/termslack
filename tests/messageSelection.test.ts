@@ -377,7 +377,7 @@ test("a message taller than the view is scrolled through line by line before the
   expect(app.screen()).not.toContain("w0 ");
 });
 
-test("the status bar shows message keys while the message pane has focus", async () => {
+test("the status line shows message keys while the message pane has focus", async () => {
   await start(30);
 
   const bar = () => app.screen().split("\n").at(-1)!;

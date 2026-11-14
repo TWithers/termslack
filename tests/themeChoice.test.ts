@@ -103,7 +103,7 @@ test("runApp paints with the configured theme", async () => {
   expect(terminal.written()).toContain(backgroundCode(theme.paneBackground));
 });
 
-test("an unknown theme name falls back to the default and the status bar names it", async () => {
+test("an unknown theme name falls back to the default and the status line names it", async () => {
   const { terminal } = await startRunning("not-a-theme");
 
   await waitFor(() =>

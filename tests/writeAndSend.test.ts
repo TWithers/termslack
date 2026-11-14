@@ -211,7 +211,7 @@ test("& < > are escaped and blank messages aren't sent", async () => {
   await app.waitForScreen("a & b <c>");
 });
 
-test("a failed send says why in the status bar and puts the text back", async () => {
+test("a failed send says why in the status line and puts the text back", async () => {
   await start({
     prepare: (slack) =>
       slack.respond("chat.postMessage", () => ({

@@ -68,6 +68,10 @@ export type User = {
   status?: UserStatus;
   /** The colour Slack gives the person, as `#rrggbb`. Bots and apps may have none. */
   color?: string;
+  /** The person's time zone as an IANA name (`America/Chicago`), when Slack gave one. */
+  timeZone?: string;
+  /** The person's offset from UTC in seconds as Slack last saw it (DST included), for when the name is missing or unknown. */
+  timeZoneOffset?: number;
 };
 
 /** A user group (`@engineering`), as `usergroups.list` describes it. */

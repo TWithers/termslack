@@ -14,9 +14,6 @@ export type Editing = MessageRef & {
   original: string;
 };
 
-/** Shown above the input while a message is being edited. */
-export const editingNotice = "Editing — Enter to save, Esc to cancel";
-
 /**
  * Where the edited text lives. It is a draft of its own, so the draft that
  * was in the input before editing is never touched and is back when the edit

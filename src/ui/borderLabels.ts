@@ -63,6 +63,32 @@ export function keyVariants(text: string): string[] {
 
 const segmenter = new Intl.Segmenter();
 
+/**
+ * `text` in the forms that `fitBorderLabels` tries when its ending must
+ * survive ("Leave #general? y/n", ending "? y/n"): whole, then with the
+ * middle of what comes before the ending cut away with an ellipsis, a
+ * character at a time ("Leave #gene…? y/n"), down to one character kept.
+ * Text that does not end with `ending` is returned as it is.
+ */
+export function keepEndingVariants(text: string, ending: string): string[] {
+  if (!text.endsWith(ending) || text === ending) {
+    return [text];
+  }
+
+  const head = [...segmenter.segment(text.slice(0, -ending.length))].map(
+    ({ segment }) => segment,
+  );
+  const variants = [text];
+
+  for (let kept = head.length - 1; kept >= 1; kept--) {
+    variants.push(
+      `${head.slice(0, kept).join("").trimEnd()}${ellipsis}${ending}`,
+    );
+  }
+
+  return variants;
+}
+
 /** `text` cut to at most `room` cells, ending in an ellipsis when something was cut; a wide character is never split. */
 function cut(text: string, room: number): string {
   if (cellWidth(text) <= room) {

@@ -43,9 +43,9 @@ const myReply: Raw = {
   thread_ts: parentTs,
 };
 
-async function start() {
+async function start(columns = 160) {
   app = await startAppHarness({
-    columns: 160,
+    columns,
     rows: 30,
     prepare: (slack) => {
       slack.respond("conversations.history", () => ({
@@ -81,7 +81,18 @@ const column = (from: number, to?: number) =>
 
 const messagePane = () => column(32, 96);
 const threadPane = () => column(96);
-const statusBar = () => statusLine(app.screen());
+const messageStatus = () => statusLine(app.screen(), 32, 96);
+const threadStatus = () => statusLine(app.screen(), 96);
+
+/** Tabs until the status line of the pane (read by `status`) shows the edit hint: the edit is still on. */
+async function tabBackToEdit(status: () => string) {
+  for (let tabs = 0; tabs < 5 && !status().includes("Editing —"); tabs++) {
+    await app.press(keys.tab);
+  }
+
+  expect(status()).toContain("Editing — Enter saves");
+}
+const statusLineText = () => statusLine(app.screen());
 
 function echoEdit(ts: string, text: string) {
   return app.sendEvents({
@@ -102,13 +113,26 @@ function echoEdit(ts: string, text: string) {
   });
 }
 
+test("while editing, a narrower status line keeps exactly 'Editing — Enter saves · Esc cancels'", async () => {
+  await start(90);
+  await app.press("e");
+
+  expect(statusLine(app.screen(), 30)).toContain(
+    "Editing — Enter saves · Esc cancels",
+  );
+  expect(statusLine(app.screen(), 30)).not.toContain("newline");
+  expect(app.screen().split("Editing —")).toHaveLength(2);
+});
+
 test("e puts the message in the input in edit mode; Enter saves it through chat.update and it shows (edited)", async () => {
   await start();
   await app.press("e");
 
-  expect(app.screen()).toContain("Editing — Enter to save, Esc to cancel");
-  expect(statusBar()).toContain("Enter save");
-  expect(statusBar()).toContain("Esc cancel");
+  expect(app.screen()).toContain("Editing — Enter saves");
+  expect(statusLineText()).toContain("Enter saves");
+  expect(statusLineText()).toContain("Alt+Enter/Ctrl+J newline");
+  expect(statusLineText()).toContain("Esc cancels");
+  expect(app.screen().split("Editing —")).toHaveLength(2);
   expect(app.screen()).toContain("my words & more");
 
   await app.press(" plus");
@@ -179,25 +203,25 @@ test("e and d on someone else's message show a hint and do nothing", async () =>
   await app.press("k");
   await app.press("e");
 
-  expect(statusBar()).toContain("You can only edit your own messages");
+  expect(statusLineText()).toContain("You can only edit your own messages");
   expect(app.screen()).not.toContain("Editing —");
 
   await app.press("d");
 
-  expect(statusBar()).toContain("You can only delete your own messages");
-  expect(statusBar()).not.toContain("Delete this message?");
+  expect(statusLineText()).toContain("You can only delete your own messages");
+  expect(statusLineText()).not.toContain("Delete this message?");
   expect(calls("chat.delete")).toHaveLength(0);
 });
 
-test("d asks in the status bar; any other key cancels and nothing else happens", async () => {
+test("d asks in the status line; any other key cancels and nothing else happens", async () => {
   await start();
   await app.press("d");
 
-  expect(statusBar()).toContain("Delete this message? y/n");
+  expect(statusLineText()).toContain("Delete this message? y/n");
 
   await app.press("k");
 
-  expect(statusBar()).not.toContain("Delete this message?");
+  expect(statusLineText()).not.toContain("Delete this message?");
   expect(calls("chat.delete")).toHaveLength(0);
   expect(messagePane()).toContain("my words & more");
 });
@@ -253,7 +277,7 @@ test("the thread pane edits and deletes its own messages the same way", async ()
   await app.press("j");
   await app.press("e");
 
-  expect(threadPane()).toContain("Editing — Enter to save, Esc to cancel");
+  expect(threadPane()).toContain("Editing — Enter saves");
 
   await app.press("!");
   await app.press(keys.enter);
@@ -297,7 +321,7 @@ test("an edit in the conversation input does not capture the thread reply box", 
   await openThreadThenMessages();
   await app.press("e");
 
-  expect(messagePane()).toContain("Editing — Enter to save, Esc to cancel");
+  await tabBackToEdit(messageStatus);
 
   await app.press(keys.tab);
   await app.press(keys.tab);
@@ -314,13 +338,13 @@ test("an edit in the conversation input does not capture the thread reply box", 
     thread_ts: parentTs,
   });
   expect(calls("chat.update")).toHaveLength(0);
-  expect(messagePane()).toContain("Editing — Enter to save, Esc to cancel");
+  await tabBackToEdit(messageStatus);
 
   await app.press(keys.tab);
   await app.press(keys.tab);
   await app.press(keys.tab);
 
-  expect(messagePane()).toContain("Editing — Enter to save, Esc to cancel");
+  await tabBackToEdit(messageStatus);
 });
 
 test("Esc in the thread reply box leaves an edit in the conversation input alone", async () => {
@@ -331,7 +355,7 @@ test("Esc in the thread reply box leaves an edit in the conversation input alone
   await app.press(keys.tab);
   await app.press(keys.escape);
 
-  expect(messagePane()).toContain("Editing — Enter to save, Esc to cancel");
+  await tabBackToEdit(messageStatus);
 });
 
 test("an edit in the thread does not capture the conversation input", async () => {
@@ -353,7 +377,7 @@ test("an edit in the thread does not capture the conversation input", async () =
   expect(postCalls()[0]?.params).toMatchObject({ text: "yo" });
   expect(postCalls()[0]?.params).not.toHaveProperty("thread_ts");
   expect(calls("chat.update")).toHaveLength(0);
-  expect(threadPane()).toContain("Editing — Enter to save, Esc to cancel");
+  await tabBackToEdit(threadStatus);
 });
 
 test("narrowing the terminal never drops focus into the thread input", async () => {
@@ -365,7 +389,7 @@ test("narrowing the terminal never drops focus into the thread input", async () 
 
   expect(app.screen()).not.toContain("x│");
   expect(app.screen()).toContain("Reply…");
-  expect(statusBar()).not.toContain("Enter send");
+  expect(statusLineText()).not.toContain("Enter send");
 });
 
 test("an edit in the conversation input is cancelled when the terminal narrows, and the draft returns", async () => {

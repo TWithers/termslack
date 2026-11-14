@@ -29,6 +29,11 @@ export function convertUser(raw: unknown): User | undefined {
     isDeleted: typeof raw.deleted === "boolean" ? raw.deleted : undefined,
     status,
     color: hexColour(raw.color),
+    timeZone: presentString(raw.tz),
+    timeZoneOffset:
+      typeof raw.tz_offset === "number" && Number.isFinite(raw.tz_offset)
+        ? raw.tz_offset
+        : undefined,
   };
 
   return Object.fromEntries(

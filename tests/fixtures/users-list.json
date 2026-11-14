@@ -8,6 +8,9 @@
         "name": "spengler",
         "deleted": false,
         "real_name": "Egon Spengler",
+        "tz": "America/Los_Angeles",
+        "tz_label": "Pacific Daylight Time",
+        "tz_offset": -25200,
         "profile": {
           "status_text": "",
           "status_emoji": "",
@@ -24,6 +27,9 @@
         "name": "venkman",
         "deleted": false,
         "real_name": "Peter Venkman",
+        "tz": "America/Chicago",
+        "tz_label": "Central Standard Time",
+        "tz_offset": -21600,
         "profile": {
           "status_text": "In a meeting",
           "status_emoji": ":calendar:",

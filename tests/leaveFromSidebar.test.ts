@@ -81,7 +81,7 @@ async function start({
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => statusLine(app.screen());
+const statusLineText = () => statusLine(app.screen());
 
 const sidebarRows = () =>
   readSidebarRows(app.screen(), 32).map((line) => line.trim());
@@ -111,13 +111,13 @@ function fakeMemory(initial?: string) {
   return { memory, writes };
 }
 
-test("x on a channel asks 'Leave #name? y/n' in the status bar without calling Slack", async () => {
+test("x on a channel asks 'Leave #name? y/n' in the status line without calling Slack", async () => {
   await start();
 
   await app.press("x");
 
-  expect(statusBar()).toContain("Leave #general? y/n");
-  expect(statusBar()).not.toContain("rejoin");
+  expect(statusLineText()).toContain("Leave #general? y/n");
+  expect(statusLineText()).not.toContain("rejoin");
   expect(calls()).toHaveLength(0);
 });
 
@@ -129,7 +129,7 @@ test("y leaves with conversations.leave and the channel goes from the sidebar, s
   await waitFor(() => !inSidebar("#general"));
 
   expect(calls().map((call) => call.params)).toEqual([{ channel: general }]);
-  expect(statusBar()).not.toContain("Leave #general");
+  expect(statusLineText()).not.toContain("Leave #general");
   expect(selectedRow()).toContain("#random");
   expect(inSidebar("#random")).toBe(true);
 });
@@ -155,8 +155,8 @@ test("a private channel's confirmation says it can't be rejoined without an invi
   await app.press("j");
   await app.press("x");
 
-  expect(statusBar()).toContain("Leave #secret?");
-  expect(statusBar()).toContain("can't rejoin without an invite");
+  expect(statusLineText()).toContain("Leave #secret?");
+  expect(statusLineText()).toContain("can't rejoin without an invite");
 
   await app.press("y");
   await waitFor(() => !inSidebar("#secret"));
@@ -175,7 +175,7 @@ test.each([
   await app.press("x");
   await app.press(key);
 
-  expect(statusBar()).not.toContain("Leave #general");
+  expect(statusLineText()).not.toContain("Leave #general");
   expect(calls()).toHaveLength(0);
   expect(app.session.conversation(general)?.isMember).toBe(true);
   expect(inSidebar("#general")).toBe(true);
@@ -200,8 +200,8 @@ test("x on a DM or group DM does nothing but say only channels can be left", asy
 
     await app.press("x");
 
-    expect(statusBar()).toContain("Only channels can be left");
-    expect(statusBar()).not.toContain("y/n");
+    expect(statusLineText()).toContain("Only channels can be left");
+    expect(statusLineText()).not.toContain("y/n");
 
     await app.press("y");
   }
@@ -217,7 +217,7 @@ test("x on a section heading does nothing", async () => {
 
   await app.press("x");
 
-  expect(statusBar()).not.toContain("y/n");
+  expect(statusLineText()).not.toContain("y/n");
   expect(calls()).toHaveLength(0);
 });
 
@@ -339,9 +339,9 @@ test("without channels:write x explains up front, asks nothing and calls nothing
 
   await app.press("x");
 
-  expect(statusBar()).toContain("Leaving channels is off");
-  expect(statusBar()).toContain("channels:write");
-  expect(statusBar()).not.toContain("y/n");
+  expect(statusLineText()).toContain("Leaving channels is off");
+  expect(statusLineText()).toContain("channels:write");
+  expect(statusLineText()).not.toContain("y/n");
 
   await app.press("y");
 
@@ -356,14 +356,14 @@ test("without groups:write a private channel can't be left but a public one can"
   await app.press("j");
   await app.press("x");
 
-  expect(statusBar()).toContain("groups:write");
-  expect(statusBar()).not.toContain("y/n");
+  expect(statusLineText()).toContain("groups:write");
+  expect(statusLineText()).not.toContain("y/n");
 
   await app.press("k");
   await app.press("k");
   await app.press("x");
 
-  expect(statusBar()).toContain("Leave #general? y/n");
+  expect(statusLineText()).toContain("Leave #general? y/n");
 });
 
 test.each([
@@ -380,7 +380,7 @@ test.each([
     await waitFor(() => calls().length === 1);
     await app.waitForScreen(words);
 
-    expect(statusBar()).toContain(words);
+    expect(statusLineText()).toContain(words);
     expect(app.session.conversation(general)?.isMember).toBe(true);
     expect(inSidebar("#general")).toBe(true);
   },

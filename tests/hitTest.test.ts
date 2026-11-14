@@ -47,7 +47,7 @@ test("the sidebar, the message pane and its input", () => {
   expect(hitTest(l, 5, 29)).toEqual({ area: "none" });
 });
 
-test("there is no status bar row: the boxes reach the last row of the screen", () => {
+test("there is no status line row: the boxes reach the last row of the screen", () => {
   const l = layout({ rows: 30, bodyHeight: 30 });
 
   expect(hitTest(l, 5, 29)).toEqual({ area: "sidebar", column: 5, row: 28 });

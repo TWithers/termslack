@@ -83,7 +83,7 @@ const calls = (method: string) =>
   app.slack.calls.filter((call) => call.method === method);
 
 const reactionsOf = (ts: string) => app.session.message(general, ts)?.reactions;
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 const popup = () => findPopup(app.screen(), "Add reaction");
 const promptArea = () => popup()?.rows.join("\n") ?? "";
 const bottomLine = () => app.screen().trimEnd().split("\n").at(-2)!;
@@ -231,7 +231,7 @@ test("your own reactions are highlighted in the reaction line, including a new o
   expect(marked("👀")).toBe(true);
 });
 
-test("a refused reaction goes back and the reason is in the status bar", async () => {
+test("a refused reaction goes back and the reason is in the status line", async () => {
   await start();
   app.slack.respond("reactions.add", () => ({
     ok: false,
@@ -242,7 +242,7 @@ test("a refused reaction goes back and the reason is in the status bar", async (
   await app.press(keys.enter);
   await app.waitForScreen("most reactions");
 
-  expect(statusBar()).toContain("most reactions");
+  expect(statusLineText()).toContain("most reactions");
   expect(reactionsOf(mineTs)).toEqual([
     { name: "heart", userIds: [me, other], count: 2 },
   ]);
@@ -260,7 +260,7 @@ test("already_reacted leaves the reaction shown and says nothing", async () => {
   await waitFor(() => calls("reactions.add").length > 0);
   await app.press("");
 
-  expect(statusBar()).not.toContain("Slack");
+  expect(statusLineText()).not.toContain("Slack");
   expect(reactionsOf(mineTs)?.map((reaction) => reaction.name)).toContain(
     "eyes",
   );
@@ -288,7 +288,7 @@ test("while the prompt is open its keys don't act on the list", async () => {
   await app.press("r");
   await app.press("d");
 
-  expect(statusBar()).not.toContain("Delete this message?");
+  expect(statusLineText()).not.toContain("Delete this message?");
   expect(popup()).toBeDefined();
 });
 

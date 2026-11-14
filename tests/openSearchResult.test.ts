@@ -142,7 +142,7 @@ async function searchFor(query = "needle") {
 
 const searchOpen = () =>
   findPopup(app.screen(), "Search messages") !== undefined;
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 /** The selected message's line in the panes (the bar in the pane's title row only marks focus). */
 const selectedLine = () =>
   app
@@ -229,7 +229,7 @@ test("a result further back than the last 200 messages opens at the oldest one l
   await openSelectedResult();
   await app.waitForScreen("further back");
 
-  expect(statusBar()).toContain(
+  expect(statusLineText()).toContain(
     "That result is further back than the last 200 messages. Scroll up to load more.",
   );
   expect(searchOpen()).toBe(false);
@@ -295,7 +295,7 @@ test("a thread reply opens the thread pane on the reply, with the parent selecte
   ).toBe(true);
 
   await app.press("q");
-  expect(statusBar()).not.toContain("deleted");
+  expect(statusLineText()).not.toContain("deleted");
 });
 
 test("a thread parent found by search opens in its conversation like any message, without a thread pane", async () => {
@@ -319,7 +319,7 @@ test("a message that has been deleted opens the conversation at that point and s
   await openSelectedResult();
   await app.waitForScreen("deleted");
 
-  expect(statusBar()).toContain("That message has been deleted.");
+  expect(statusLineText()).toContain("That message has been deleted.");
   expect(searchOpen()).toBe(false);
   await waitFor(() => selectedLine().includes(num(64)));
 });
@@ -332,7 +332,7 @@ test("a thread reply that has been deleted opens the thread and says so", async 
   await openSelectedResult();
   await app.waitForScreen("deleted");
 
-  expect(statusBar()).toContain("That message has been deleted.");
+  expect(statusLineText()).toContain("That message has been deleted.");
   expect(app.screen()).toContain("the reply");
 });
 
@@ -423,14 +423,14 @@ test("a public channel the user isn't in opens read-only: its history shows and 
 
   await app.press("i");
   await app.press("a");
-  expect(statusBar()).toContain("not a member");
+  expect(statusLineText()).toContain("not a member");
   expect(app.session.conversation(design)?.isMember).toBe(false);
   expect(
     app.slack.calls.filter((call) => call.method === "conversations.mark"),
   ).toHaveLength(0);
 });
 
-test("a channel Slack won't let the user read shows the reason in the status bar", async () => {
+test("a channel Slack won't let the user read shows the reason in the status line", async () => {
   await start(
     [{ channel: design, ts: tsOf(7), text: "needle design", name: "design" }],
     {
@@ -463,7 +463,7 @@ test("a channel Slack won't let the user read shows the reason in the status bar
   await openSelectedResult();
   await app.waitForScreen("without joining it");
 
-  expect(statusBar()).toContain(
+  expect(statusLineText()).toContain(
     "Slack doesn't let you read this channel without joining it",
   );
   expect(searchOpen()).toBe(false);

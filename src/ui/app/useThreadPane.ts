@@ -109,7 +109,7 @@ export function useThreadPane({
     width,
     availableHeight: height,
     focused: inputFocused && target !== undefined,
-    noticeLines: alsoToChannel || editPlace !== undefined ? 1 : 0,
+    noticeLines: alsoToChannel && editPlace === undefined ? 1 : 0,
   });
   const selection = usePaneSelection({
     rows,

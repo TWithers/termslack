@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   borderLabelRoom,
   fitBorderLabels,
+  keepEndingVariants,
   keyVariants,
 } from "../src/ui/borderLabels";
 import { cellWidth } from "../src/ui/terminalSafeText";
@@ -184,5 +185,40 @@ describe("every width", () => {
         expect(fitted.bottomLeft).toBeDefined();
       }
     }
+  });
+});
+
+describe("labels whose ending must stay", () => {
+  test("the middle is cut and the ending kept, a character at a time", () => {
+    const variants = keepEndingVariants("Leave #general? y/n", "? y/n");
+
+    expect(variants[0]).toBe("Leave #general? y/n");
+    expect(variants[1]).toBe("Leave #genera…? y/n");
+    expect(variants.at(-1)).toBe("L…? y/n");
+    expect(variants.every((each) => each.endsWith("? y/n"))).toBe(true);
+  });
+
+  test("text without the ending is left alone", () => {
+    expect(keepEndingVariants("Delete it", "? y/n")).toEqual(["Delete it"]);
+  });
+
+  test("fitBorderLabels picks the longest that fits, so a question never loses its y/n", () => {
+    const question = keepEndingVariants(
+      "Leave #a-very-long-channel-name? y/n",
+      "? y/n",
+    );
+
+    for (const width of [34, 24, 18, 14]) {
+      const fitted = fitBorderLabels(width, { bottomLeft: question });
+
+      expect(fitted.bottomLeft, `width ${width}`).toEndWith("? y/n");
+      expect(cellWidth(fitted.bottomLeft!)).toBeLessThanOrEqual(
+        borderLabelRoom(width),
+      );
+    }
+
+    expect(fitBorderLabels(24, { bottomLeft: question }).bottomLeft).toBe(
+      "Leave #a-very-…? y/n",
+    );
   });
 });

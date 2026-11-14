@@ -58,12 +58,46 @@ export function isShown(message: Message): boolean {
   return !message.isDeleted && message.subtype !== "tombstone";
 }
 
+const clockFormat = {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+} as const;
+
 export function clock(ts: string): string {
-  return new Date(Number.parseFloat(ts) * 1000).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  return new Date(Number.parseFloat(ts) * 1000).toLocaleTimeString(
+    "en-GB",
+    clockFormat,
+  );
+}
+
+/**
+ * The time of day at `date` for a person in `zone`, formatted as the message
+ * list shows times ("14:05"): by the zone's name when it has one this runtime
+ * knows, else by its offset from UTC; undefined when it has neither.
+ */
+export function clockIn(
+  date: Date,
+  zone: { timeZone?: string; timeZoneOffset?: number },
+): string | undefined {
+  if (zone.timeZone !== undefined) {
+    try {
+      return date.toLocaleTimeString("en-GB", {
+        ...clockFormat,
+        timeZone: zone.timeZone,
+      });
+    } catch {
+      // An unknown zone name: fall back to the offset.
+    }
+  }
+
+  if (zone.timeZoneOffset === undefined) {
+    return undefined;
+  }
+
+  return new Date(
+    date.getTime() + zone.timeZoneOffset * 1000,
+  ).toLocaleTimeString("en-GB", { ...clockFormat, timeZone: "UTC" });
 }
 
 /** `you` is the viewer, whose mentions stand out. `compact` leaves out the address after a link's label, for tight places like field grids. */

@@ -49,7 +49,7 @@ async function start({
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 const popup = () => findPopup(app.screen(), searchTitle);
 const popupText = () => popup()?.rows.join("\n") ?? "";
 const title = () => popup()?.topBorder ?? "";
@@ -76,7 +76,7 @@ test("/ from the sidebar opens a search prompt that says what to type, and runs 
   expect(popup()).toBeDefined();
   expect(popupText()).toContain("Type a query and press Enter");
   expect(popup()!.bottomBorder).toContain("Enter search");
-  expect(statusBar()).not.toContain("Enter search");
+  expect(statusLineText()).not.toContain("Enter search");
   expect(searchCalls()).toHaveLength(0);
 });
 
@@ -227,13 +227,13 @@ test("a refusal with a code termslack has no wording for shows the code", async 
   await app.waitForScreen("fatal_error");
 });
 
-test("without search:read, / explains in the status bar and opens nothing", async () => {
+test("without search:read, / explains in the status line and opens nothing", async () => {
   await start({ scopes: ["identify", "channels:read"] });
 
   await app.press("/");
 
   expect(popup()).toBeUndefined();
-  expect(statusBar()).toContain("search:read");
+  expect(statusLineText()).toContain("search:read");
   expect(searchCalls()).toHaveLength(0);
 });
 
@@ -263,14 +263,14 @@ test("Esc closes the search and focus is back where it was", async () => {
   await start();
   await app.press(keys.enter);
   await app.press(keys.tab);
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
 
   await searchFor("proton");
   await app.waitForScreen("proton pack lunch");
   await app.press(keys.escape);
 
   expect(popup()).toBeUndefined();
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
 });
 
 test("the last query is remembered: reopening search starts with it and its results", async () => {

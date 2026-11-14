@@ -102,8 +102,34 @@ test("the open DM's top border shows the person's name and that they are active"
   await openRow("@Peter Venkman");
 
   await waitFor(() =>
-    /^╭─ @Peter Venkman ─+ ● active ─╮$/.test(paneTopBorder()),
+    /^╭─ @Peter Venkman ─+ ● active · \d\d:\d\d ─╮$/.test(paneTopBorder()),
   );
+});
+
+/** 20:42:59.9 UTC, a moment before the minute turns: 14:42 in Chicago, where the fixture has Peter Venkman. */
+const justBeforeTheMinute = Date.UTC(2026, 10, 9, 20, 42, 59, 900);
+
+test("an open DM shows the person's local time after their presence, and it moves on with the minute", async () => {
+  let current = justBeforeTheMinute;
+
+  await start(undefined, { now: () => new Date(current) });
+  await waitFor(() => marker("@Peter Venkman") === "●");
+  await openRow("@Peter Venkman");
+
+  await waitFor(() => paneTopBorder().includes("● active · 14:42 ─╮"));
+
+  current = Date.UTC(2026, 10, 9, 20, 43, 0, 500);
+
+  await waitFor(() => paneTopBorder().includes("● active · 14:43 ─╮"));
+});
+
+test("a DM whose person has no time zone shows presence only", async () => {
+  await start(undefined, { now: () => new Date(justBeforeTheMinute) });
+
+  await waitFor(() => marker("@stantz") === "○");
+  await openRow("@stantz");
+
+  await waitFor(() => /^╭─ @stantz ─+ ○ away ─╮$/.test(paneTopBorder()));
 });
 
 test("an away person's top border shows the hollow dot and away", async () => {

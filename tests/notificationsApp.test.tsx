@@ -272,7 +272,7 @@ test("after quitting, notifications no longer ring", async () => {
   expect(bells).toEqual([]);
 });
 
-test("when dnd.info fails the status bar says so", async () => {
+test("when dnd.info fails the status line says so", async () => {
   const app = await startAppHarness({
     prepare: (slack) =>
       slack.respond("dnd.info", () => ({ ok: false, error: "fatal_error" })),
@@ -384,7 +384,7 @@ test("suppressed messages show nothing", async () => {
   await finished;
 });
 
-test("without the notification tool the status bar says so once and the bell carries on", async () => {
+test("without the notification tool the status line says so once and the bell carries on", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
     desktop: true,
     notifier: createDesktopNotifier({ platform: "linux", which: () => null }),

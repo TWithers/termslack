@@ -119,7 +119,7 @@ const rowOf = (name: string) =>
 const screenRowOf = (name: string) => rowOf(name) + 1;
 const isListed = (name: string) => rowOf(name) !== -1;
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
-const statusBar = () => statusLine(app.screen());
+const statusLineText = () => statusLine(app.screen());
 
 async function selectRow(name: string) {
   const selectedIndex = () =>
@@ -177,13 +177,13 @@ describe("hiding muted channels from the keyboard", () => {
     await start({ muteMemory: muteMemory([general]) });
 
     expect(sidebarKeyHints(false)).toContain("M hide muted");
-    expect(statusBar()).toContain("M hide muted");
+    expect(statusLineText()).toContain("M hide muted");
     expect(sidebarStatus(app.screen())).not.toContain("muted hidden");
 
     await app.press("M");
 
     expect(sidebarKeyHints(true)).toContain("M show muted");
-    expect(statusBar()).toContain("M show muted");
+    expect(statusLineText()).toContain("M show muted");
     expect(sidebarStatus(app.screen())).toContain("muted hidden");
   });
 

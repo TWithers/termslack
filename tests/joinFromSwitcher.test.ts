@@ -60,7 +60,7 @@ async function start({
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 const switcherIsOpen = () => app.screen().includes("Switch conversation");
 const switcherTitle = () =>
   app
@@ -142,13 +142,13 @@ test("while the listing is still loading the switcher shows what is loaded so fa
   expect(results()).toEqual(["#devops not a member · 54 members"]);
 });
 
-test("picking one asks 'Join #name? y/n' in the status bar without calling Slack", async () => {
+test("picking one asks 'Join #name? y/n' in the status line without calling Slack", async () => {
   await start();
 
   await pickDesign();
 
   expect(switcherIsOpen()).toBe(false);
-  expect(statusBar()).toContain("Join #design? y/n");
+  expect(statusLineText()).toContain("Join #design? y/n");
   expect(calls("conversations.join")).toHaveLength(0);
   expect(sidebarRows().some((row) => row.includes("#design"))).toBe(false);
 });
@@ -163,8 +163,8 @@ test("y joins with conversations.join, adds the channel to the Channels section 
   expect(calls("conversations.join").map((call) => call.params)).toEqual([
     { channel: design },
   ]);
-  expect(statusBar()).not.toContain("Join #design");
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).not.toContain("Join #design");
+  expect(statusLineText()).toContain("j/k select");
   expect(sidebarRows().filter((row) => row.includes("#design"))).toHaveLength(
     1,
   );
@@ -230,21 +230,21 @@ test.each([
   await pickDesign();
   await app.press(key);
 
-  expect(statusBar()).not.toContain("Join #design");
+  expect(statusLineText()).not.toContain("Join #design");
   expect(switcherIsOpen()).toBe(false);
   expect(calls("conversations.join")).toHaveLength(0);
   expect(app.session.conversation(design)?.isMember).toBe(false);
   expect(sidebarRows().some((row) => row.includes("#design"))).toBe(false);
 });
 
-test("without channels:write picking a channel explains in the status bar and asks nothing", async () => {
+test("without channels:write picking a channel explains in the status line and asks nothing", async () => {
   await start({ scopes: ["identify", "channels:read"] });
 
   await pickDesign();
 
-  expect(statusBar()).toContain("Joining channels is off");
-  expect(statusBar()).toContain("channels:write");
-  expect(statusBar()).not.toContain("y/n");
+  expect(statusLineText()).toContain("Joining channels is off");
+  expect(statusLineText()).toContain("channels:write");
+  expect(statusLineText()).not.toContain("y/n");
 
   await app.press("y");
 
@@ -268,7 +268,7 @@ test.each([
     await waitFor(() => calls("conversations.join").length === 1);
     await app.waitForScreen(words);
 
-    expect(statusBar()).toContain(words);
+    expect(statusLineText()).toContain(words);
     expect(app.session.conversations()).toEqual(before);
     expect(app.session.conversation(design)?.isMember).toBe(false);
     expect(sidebarRows().some((row) => row.includes("#design"))).toBe(false);

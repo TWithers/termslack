@@ -90,7 +90,7 @@ async function say(channel: string, overrides: Record<string, unknown> = {}) {
   });
 }
 
-const statusBar = () => statusLine(app.screen());
+const statusLineText = () => statusLine(app.screen());
 const switcherIsOpen = () => app.screen().includes("Switch conversation");
 
 /** The switcher's result rows, without the highlight marker. */
@@ -138,7 +138,7 @@ test("Ctrl+K opens the switcher over everything the user is in, leaving out arch
   expect(
     findPopup(app.screen(), "Switch conversation")!.bottomBorder,
   ).toContain("Enter open");
-  expect(statusBar()).not.toContain("Enter open");
+  expect(statusLineText()).not.toContain("Enter open");
   expect(results()).toEqual(
     expect.arrayContaining([
       "#general",
@@ -226,7 +226,7 @@ test("Enter opens the highlighted conversation, selects it in the sidebar and mo
   await app.waitForScreen("hello there");
 
   expect(switcherIsOpen()).toBe(false);
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
   expect(app.session.currentUserId).toBeDefined();
   expect(app.screen()).toContain("›▌ #random");
 });
@@ -271,7 +271,7 @@ test("Ctrl+K works while typing: Esc leaves the input's text and focus alone", a
   await app.waitForScreen("hello there");
   await app.press("i");
   await type("half a thought");
-  expect(statusBar()).toContain("Esc back");
+  expect(statusLineText()).toContain("Esc back");
 
   await app.press(keys.ctrlK);
 
@@ -282,7 +282,7 @@ test("Ctrl+K works while typing: Esc leaves the input's text and focus alone", a
 
   expect(switcherIsOpen()).toBe(false);
   expect(app.screen()).toContain("half a thought");
-  expect(statusBar()).toContain("Esc back");
+  expect(statusLineText()).toContain("Esc back");
 
   await type("!");
 
@@ -300,7 +300,7 @@ test("choosing from an input opens the conversation and keeps both drafts", asyn
   await app.waitForScreen("hello there");
 
   expect(app.screen()).not.toContain("draft one");
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
 
   await app.press("i");
   await type("draft two");
@@ -331,7 +331,7 @@ test("Ctrl+K opens from the message pane and a second Ctrl+K closes it", async (
   await app.press(keys.ctrlK);
 
   expect(switcherIsOpen()).toBe(false);
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
 });
 
 test("choosing a conversation in a collapsed section expands it", async () => {

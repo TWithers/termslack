@@ -16,7 +16,6 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
 
   const paneBackground = background;
   const sidebarBackground = palette.darkBackground;
-  const statusBarBackground = palette.darkerBackground;
   const popupBackground = palette.lighterBackground;
 
   /** Tints for highlights: faint on dark backgrounds, a little stronger on light ones where the same amount hardly shows. */
@@ -26,12 +25,10 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
 
   /** Text sits on every background, so it must read on the hardest of them. */
   const onEveryBackground = (colour: string) =>
-    [
-      paneBackground,
-      sidebarBackground,
-      statusBarBackground,
-      popupBackground,
-    ].reduce(legibleOn, colour);
+    [paneBackground, sidebarBackground, popupBackground].reduce(
+      legibleOn,
+      colour,
+    );
 
   const text = onEveryBackground(foreground);
   const brightText = onEveryBackground(palette.brightForeground);
@@ -50,8 +47,6 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
     paneBackground,
     sidebarBackground,
     sidebarHoverBackground: mixColours(sidebarBackground, foreground, 0.1),
-    inputBoxBackground: popupBackground,
-    statusBarBackground,
     popupBackground,
 
     text,
@@ -59,8 +54,6 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
     mutedChannelText,
     brightText,
     sidebarHeadingText: legibleOn(palette.lightForeground, sidebarBackground),
-    statusBarText: legibleOn(foreground, statusBarBackground),
-    statusBarSecondaryText: legibleOn(secondaryText, statusBarBackground),
 
     selectionBackground: selection,
     selectionText,

@@ -29,7 +29,13 @@ import {
   sidebarListHeight,
 } from "./paneLayout";
 import { TitledBox } from "../TitledBox";
-import { conversationRows, dayKey, isShown, olderStatusText } from "./paneRows";
+import {
+  clockIn,
+  conversationRows,
+  dayKey,
+  isShown,
+  olderStatusText,
+} from "./paneRows";
 import { theme } from "../theme";
 import { Sidebar } from "./Sidebar";
 import {
@@ -48,6 +54,7 @@ import {
 } from "./sidebarEntries";
 import {
   editKeyHints,
+  keysFitBorder,
   sidebarKeyHints,
   statusLineLabel,
   statusWarning,
@@ -62,6 +69,7 @@ import { useCollapsedSections } from "./useCollapsedSections";
 import { useHideMuted } from "./useHideMuted";
 import { useHistory } from "./useHistory";
 import { useMidnightRedraw } from "./useMidnightRedraw";
+import { useMinuteRedraw } from "./useMinuteRedraw";
 import { useMouse } from "./useMouse";
 import { usePaneSelection } from "./usePaneSelection";
 import { useReopenLast } from "./useReopenLast";
@@ -72,7 +80,6 @@ import { usePopups } from "./usePopups";
 import { useStatusMessage } from "./useStatusMessage";
 import {
   type Editing,
-  editingNotice,
   editPlace,
   useMessageActions,
 } from "./useMessageActions";
@@ -136,26 +143,35 @@ function sidebarWidth(columns: number): number {
 
 /**
  * What the message pane's top border says on the right: a channel's member
- * count when Slack gave one, or a DM's person being active or away (Slack's
- * user records here carry no time zone, so there is no local time to show).
+ * count when Slack gave one, or a DM's person being active or away and, when
+ * their time zone is known, their local time ("● active · 14:05"; only the
+ * marker when it is narrow). `localTime` is that time, if there is one.
  */
 function conversationMetaOf(
   conversation: Conversation | undefined,
   presence: Presence | undefined,
+  localTime: string | undefined,
 ): { text: string[]; color: string } | undefined {
   if (conversation === undefined) {
     return undefined;
   }
 
   if (conversation.kind === "im") {
-    if (presence === undefined) {
+    if (presence === undefined && localTime === undefined) {
       return undefined;
     }
 
+    if (presence === undefined) {
+      return { text: [localTime!], color: theme.secondaryText };
+    }
+
     const marker = presenceRun(presence);
+    const withPresence = `${marker.text} ${presence}`;
 
     return {
-      text: [`${marker.text} ${presence}`, marker.text],
+      text: localTime
+        ? [`${withPresence} · ${localTime}`, withPresence, marker.text]
+        : [withPresence, marker.text],
       color: marker.color ?? theme.secondaryText,
     };
   }
@@ -317,7 +333,6 @@ export function App({
     width: textWidth,
     availableHeight: paneInnerHeight(bodyHeight),
     focused: focus === "input",
-    noticeLines: editing?.input === "input" ? 1 : 0,
   });
   /** The edit open in the focused input, if any: Enter and Esc there save or cancel it, the other input is unaffected. */
   const focusedEdit = editing?.input === focus ? editing : undefined;
@@ -896,11 +911,20 @@ export function App({
     openEntry?.kind === "entry" ? openEntry.entry : openRecordEntry
   )?.label;
 
+  const dmPerson =
+    openConversationRecord?.kind === "im" && openConversationRecord.userId
+      ? session.user(openConversationRecord.userId)
+      : undefined;
+  const localTime = dmPerson ? clockIn(now(), dmPerson) : undefined;
+
+  useMinuteRedraw(now, localTime !== undefined);
+
   const conversationMeta = conversationMetaOf(
     openConversationRecord,
     openEntry?.kind === "entry"
       ? openEntry.entry.presence
       : openRecordEntry?.presence,
+    localTime,
   );
   const threadReplyCount =
     thread.threadTs === undefined || thread.conversationId === undefined
@@ -939,16 +963,19 @@ export function App({
         ? sidebarKeyHints(hideMuted)
         : paneKeyHints[focus];
   const threadHasFocus = focus === "thread" || focus === "threadInput";
+  /** The thread's keys go on its own border, or on the message pane's when not even the shortest form fits there. */
+  const threadKeysOnOwnBorder =
+    focusKeys !== undefined && keysFitBorder(focusKeys, widths.thread);
   /** The message pane carries the status line; the thread pane does while it covers the message pane. */
   const messagesStatus = statusLineLabel({
     question,
     notices,
-    keys: threadHasFocus ? undefined : focusKeys,
+    keys: threadHasFocus && threadKeysOnOwnBorder ? undefined : focusKeys,
   });
   const threadStatus = widths.showMessages
     ? statusLineLabel({
         notices: [],
-        keys: threadHasFocus ? focusKeys : undefined,
+        keys: threadHasFocus && threadKeysOnOwnBorder ? focusKeys : undefined,
       })
     : statusLineLabel({ question, notices, keys: focusKeys });
 
@@ -994,7 +1021,6 @@ export function App({
             composer={composer}
             inputFocused={focus === "input"}
             placeholder={`Message ${openLabel}`}
-            notice={editing?.input === "input" ? editingNotice : undefined}
             disabledReason={inputProblem}
             width={paneWidth}
             height={bodyHeight}
@@ -1028,11 +1054,9 @@ export function App({
             inputFocused={focus === "threadInput"}
             placeholder="Reply…"
             notice={
-              editing?.input === "threadInput"
-                ? editingNotice
-                : thread.alsoToChannel
-                  ? `also send to ${openLabel ?? "the channel"}`
-                  : undefined
+              thread.alsoToChannel && editing?.input !== "threadInput"
+                ? `also send to ${openLabel ?? "the channel"}`
+                : undefined
             }
             disabledReason={inputProblem}
             width={widths.thread}

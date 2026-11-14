@@ -1,6 +1,11 @@
 import type { ListingHealth } from "../../session/workspaceSession";
 import type { SocketStatus } from "../../slack/socket";
-import { keyVariants } from "../borderLabels";
+import {
+  borderLabelRoom,
+  keepEndingVariants,
+  keyVariants,
+} from "../borderLabels";
+import { cellWidth } from "../terminalSafeText";
 import { theme } from "../theme";
 import type { TitledLabel } from "../TitledBox";
 
@@ -66,9 +71,19 @@ export const threadKeyHints =
 export const threadInputKeyHints =
   "Enter send · Ctrl+T also send to channel · Alt+Enter/Ctrl+J newline · Esc back";
 
-/** The keys of an input that is editing a message. */
+/**
+ * The keys of an input that is editing a message. Shortened as the border
+ * narrows, it becomes "Editing — Enter saves · Esc cancels".
+ */
 export const editKeyHints =
-  "Enter save · Alt+Enter/Ctrl+J newline · Esc cancel";
+  "Editing — Enter saves · Alt+Enter/Ctrl+J newline · Esc cancels";
+
+/** Whether the shortest form of `keys` fits a bottom border `outerWidth` columns wide (corners included). */
+export function keysFitBorder(keys: string, outerWidth: number): boolean {
+  return (
+    cellWidth(keyVariants(keys).at(-1)!) <= borderLabelRoom(outerWidth - 2)
+  );
+}
 
 /** The keys that work while the input has focus, where letters type instead of acting. */
 export const inputKeyHints = "Enter send · Alt+Enter/Ctrl+J newline · Esc back";
@@ -104,7 +119,13 @@ export function statusLineLabel({
   keys?: string;
 }): TitledLabel | undefined {
   if (question) {
-    return { text: question, color: theme.prompt, bold: true };
+    const ending = question.endsWith("? y/n") ? "? y/n" : " y/n";
+
+    return {
+      text: keepEndingVariants(question, ending),
+      color: theme.prompt,
+      bold: true,
+    };
   }
 
   const notice = notices.filter(Boolean).join(" · ");
@@ -121,11 +142,12 @@ export function statusLineLabel({
 }
 
 /**
- * The sidebar's bottom border: the connection (in its colour), then the
- * unread check while it runs, then "muted hidden" while that is on, as space
- * allows. The sidebar is narrow, so the check has a short form ("Unreads
- * 12/44") that is tried before the muted note is dropped, and the connection
- * always stays.
+ * The sidebar's bottom border: the connection (in its colour), then "muted
+ * hidden" while that is on (it explains channels that are missing, above all
+ * at startup), then the unread check's progress while it runs, in the longest
+ * form that fits ("Checking unreads 12/44", "Unreads 12/44", "12/44"). The
+ * sidebar is narrow, so the progress is what gives way; the connection always
+ * stays.
  */
 export function sidebarStatusLabel({
   status,
@@ -140,17 +162,17 @@ export function sidebarStatusLabel({
   const count = unreadProgress
     ? `${unreadProgress.done}/${unreadProgress.total}`
     : undefined;
-  const checking = count ? `Checking unreads ${count}` : undefined;
-  const unreads = count ? `Unreads ${count}` : undefined;
   const muted = hideMuted ? "muted hidden" : undefined;
-  const forms = [
-    [connection, checking, muted],
-    [connection, checking],
-    [connection, unreads, muted],
-    [connection, unreads],
-    [connection, muted],
-    [connection],
-  ].map((parts) => parts.filter(Boolean).join(" · "));
+  const progressForms = count
+    ? [`Checking unreads ${count}`, `Unreads ${count}`, count]
+    : [];
+  const forms = [...progressForms, undefined].map((progress) =>
+    [connection, muted, progress].filter(Boolean).join(" · "),
+  );
+
+  if (muted) {
+    forms.push(connection);
+  }
 
   return {
     text: [...new Set(forms)],

@@ -65,7 +65,7 @@ async function openGeneral() {
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => statusLine(app.screen());
+const statusLineText = () => statusLine(app.screen());
 const helpIsOpen = () => app.screen().includes("Keyboard shortcuts");
 
 test("? opens the help from the sidebar before any conversation is open, and Esc closes it", async () => {
@@ -77,7 +77,7 @@ test("? opens the help from the sidebar before any conversation is open, and Esc
   expect(findPopup(app.screen(), "Keyboard shortcuts")!.bottomBorder).toContain(
     "Esc or ? close",
   );
-  expect(statusBar()).not.toContain("Esc or ? close");
+  expect(statusLineText()).not.toContain("Esc or ? close");
   expect(app.screen()).toContain("#general");
 
   await app.press(keys.escape);
@@ -90,7 +90,7 @@ test("? opens the help from the message pane and closes it again with ?, focus b
   await start();
   await openGeneral();
   await app.press(keys.tab);
-  expect(statusBar()).toContain("j/k select");
+  expect(statusLineText()).toContain("j/k select");
 
   await app.press("?");
 
@@ -99,11 +99,11 @@ test("? opens the help from the message pane and closes it again with ?, focus b
   await app.press("?");
 
   expect(helpIsOpen()).toBe(false);
-  expect(statusBar()).toContain("r react");
+  expect(statusLineText()).toContain("r react");
 
   await app.press("d");
 
-  expect(statusBar()).toContain("Delete this message?");
+  expect(statusLineText()).toContain("Delete this message?");
 });
 
 test("? opens the help from the thread pane and Esc returns to the thread, not closing it", async () => {
@@ -113,7 +113,7 @@ test("? opens the help from the thread pane and Esc returns to the thread, not c
   await app.press("k");
   await app.press(keys.enter);
   await app.waitForScreen("a reply");
-  expect(statusBar()).toContain("Esc close thread");
+  expect(statusLineText()).toContain("Esc close thread");
 
   await app.press("?");
 
@@ -123,7 +123,7 @@ test("? opens the help from the thread pane and Esc returns to the thread, not c
 
   expect(helpIsOpen()).toBe(false);
   expect(app.screen()).toContain("a reply");
-  expect(statusBar()).toContain("Esc close thread");
+  expect(statusLineText()).toContain("Esc close thread");
 });
 
 test("in an input box ? types a ?", async () => {
@@ -131,7 +131,7 @@ test("in an input box ? types a ?", async () => {
   await openGeneral();
   await app.press(keys.tab);
   await app.press(keys.tab);
-  expect(statusBar()).toContain("Esc back");
+  expect(statusLineText()).toContain("Esc back");
 
   await app.press("?");
 
@@ -154,8 +154,8 @@ test("keys go only to the help while it is open", async () => {
 
   await app.press(keys.escape);
 
-  expect(statusBar()).not.toContain("Delete this message?");
-  expect(statusBar()).toContain("r react");
+  expect(statusLineText()).not.toContain("Delete this message?");
+  expect(statusLineText()).toContain("r react");
   expect(app.screen()).not.toContain("Add reaction");
 });
 

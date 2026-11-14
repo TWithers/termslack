@@ -94,7 +94,7 @@ const rowOf = (name: string) =>
 const selectedRow = () => sidebarRows().find((row) => row.startsWith("›"));
 const detailsCalls = () =>
   app.slack.calls.filter((call) => call.method === "conversations.info");
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 
 /** The popup, found by its title (`#name details`, which no sidebar row contains) over its border. */
 const details = (title: string) => findPopup(app.screen(), title);
@@ -143,7 +143,7 @@ test("the menu lists Channel details with its letter, and choosing it opens the 
   expect(shown).toContain("Section      Channels");
   expect(shown).toContain("Muted        no");
   expect(details("#general details")!.bottomBorder).toContain("j/k scroll");
-  expect(statusBar()).not.toContain("j/k scroll");
+  expect(statusLineText()).not.toContain("j/k scroll");
   expect(detailsCalls().at(-1)!.params).toMatchObject({
     channel: "C012AB3CD",
     include_num_members: "true",
@@ -324,7 +324,7 @@ test("Esc closes the popup and the sidebar has the keys again", async () => {
   await app.waitForScreen("#general details");
   await app.press("x");
 
-  expect(statusBar()).not.toContain("Leave");
+  expect(statusLineText()).not.toContain("Leave");
 
   await app.press(keys.escape);
 

@@ -1,4 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { fitBorderLabels } from "../src/ui/borderLabels";
+import {
+  keysFitBorder,
+  sidebarStatusLabel,
+  threadKeyHints,
+} from "../src/ui/app/statusLine";
 import { applyTheme, defaultThemeName, theme } from "../src/ui/theme";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import {
@@ -314,6 +320,69 @@ describe("the sidebar's bottom border", () => {
     await waitFor(() => app.session.unreadCheckProgress() === undefined);
     await waitFor(() => !sidebarStatus(app.screen()).includes("Unreads"));
   });
+
+  test("while the check runs, 'muted hidden' still shows and the progress gives way", async () => {
+    await start({
+      unreadCheck: { concurrency: 1 },
+      prepare: (slack) => {
+        slack.respond("conversations.info", async ({ params }) => {
+          await Bun.sleep(300);
+
+          return {
+            ok: true,
+            channel: { id: params.channel, last_read: "1600000000.000000" },
+          };
+        });
+      },
+    });
+
+    await app.press("M");
+
+    expect(app.session.unreadCheckProgress()).toBeDefined();
+    expect(sidebarStatus(app.screen())).toContain("● connected · muted hidden");
+    expect(sidebarStatus(app.screen())).not.toContain("Unreads");
+  });
+});
+
+describe("the sidebar's bottom border priority", () => {
+  const sidebarInner = 30;
+  const fitted = (
+    width: number,
+    options: { hideMuted: boolean; progress?: boolean },
+  ) =>
+    fitBorderLabels(width, {
+      bottomLeft: sidebarStatusLabel({
+        status: "connected",
+        hideMuted: options.hideMuted,
+        unreadProgress: options.progress ? { done: 12, total: 44 } : undefined,
+      }).text,
+    }).bottomLeft;
+
+  test("'muted hidden' beats the unread progress at the sidebar's width", () => {
+    expect(fitted(sidebarInner, { hideMuted: true, progress: true })).toBe(
+      "● connected · muted hidden",
+    );
+  });
+
+  test("the progress follows 'muted hidden' when there is room, in its longest form", () => {
+    const hidden = { hideMuted: true, progress: true };
+
+    expect(fitted(60, hidden)).toBe(
+      "● connected · muted hidden · Checking unreads 12/44",
+    );
+    expect(fitted(50, hidden)).toBe(
+      "● connected · muted hidden · Unreads 12/44",
+    );
+    expect(fitted(44, hidden)).toBe("● connected · muted hidden · 12/44");
+  });
+
+  test("without 'muted hidden' the progress shows in the longest form that fits", () => {
+    const shown = { hideMuted: false, progress: true };
+
+    expect(fitted(sidebarInner, shown)).toBe("● connected · 12/44");
+    expect(fitted(31, shown)).toBe("● connected · Unreads 12/44");
+    expect(fitted(40, shown)).toBe("● connected · Checking unreads 12/44");
+  });
 });
 
 describe("the extra row", () => {
@@ -346,6 +415,21 @@ describe("narrow terminals", () => {
 
     expect(bottom).toMatch(/^╰─ (\? help|j\/k move · \? help) ─*╯$/);
     expect(Bun.stringWidth(bottom)).toBe(50 - sidebarColumns(50));
+  });
+
+  test("a y/n question too long for the line is cut in the middle and keeps its '? y/n'", async () => {
+    await start({ columns: 33 });
+    await app.press("x");
+
+    const bottom = paneStatus(33);
+
+    expect(bottom).toMatch(/^╰─ Leave #g\S*…\? y\/n ─*╯$/);
+  });
+
+  test("the thread's keys move to the message pane's border when not even the shortest form fits the thread's", () => {
+    expect(keysFitBorder(threadKeyHints, 50)).toBe(true);
+    expect(keysFitBorder(threadKeyHints, 20)).toBe(false);
+    expect(keysFitBorder("j/k select · Esc", 8)).toBe(false);
   });
 
   test("with a thread covering the conversation on a narrow terminal, the thread's border carries the status line", async () => {

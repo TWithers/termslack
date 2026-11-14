@@ -64,7 +64,7 @@ async function start() {
   await waitFor(() => app.session.currentUserId);
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 /** The menu popup, found by the title over its border; the sidebar's own `#name` rows are blanked out first. */
 const menu = (title: string) =>
   findPopup(
@@ -109,7 +109,7 @@ test("m on a channel opens the menu titled with its name, listing Leave channel 
   expect(popup!.bottomBorder).toContain(
     "j/k or ↑/↓ move · Enter/letter choose · Esc close",
   );
-  expect(statusBar()).not.toContain("Esc close");
+  expect(statusLineText()).not.toContain("Esc close");
 });
 
 test("m on a private channel opens its menu too", async () => {
@@ -136,15 +136,15 @@ test("the menu opens beside the selected entry, over the panes", async () => {
 test("m on a DM, a group DM or a heading does nothing, not even a status message", async () => {
   await start();
 
-  const before = statusBar();
+  const before = statusLineText();
 
   for (const name of ["Direct messages", "@Peter Venkman", "@stantz"]) {
     await selectRow(name);
     await app.press("m");
 
     expect(app.screen()).not.toContain("Leave channel");
-    expect(statusBar()).toBe(before);
-    expect(statusBar()).not.toContain("y/n");
+    expect(statusLineText()).toBe(before);
+    expect(statusLineText()).not.toContain("y/n");
   }
 
   await selectRow("Channels");
@@ -189,7 +189,7 @@ test("j/k move the highlight and Enter chooses: Leave asks the same question as 
   await app.press(keys.enter);
 
   expect(menu("#general")).toBeUndefined();
-  expect(statusBar()).toContain("Leave #general? y/n");
+  expect(statusLineText()).toContain("Leave #general? y/n");
   expect(leaveCalls()).toHaveLength(0);
 });
 
@@ -200,7 +200,7 @@ test("the letter chooses straight away, and y then leaves the channel", async ()
   await app.press("l");
 
   expect(menu("#general")).toBeUndefined();
-  expect(statusBar()).toContain("Leave #general? y/n");
+  expect(statusLineText()).toContain("Leave #general? y/n");
 
   await app.press("y");
   await waitFor(() => rowOf("#general") < 0);
@@ -217,8 +217,8 @@ test("a private channel asks about the invite, as x does", async () => {
   await app.press("m");
   await app.press("l");
 
-  expect(statusBar()).toContain("Leave #secret?");
-  expect(statusBar()).toContain("can't rejoin without an invite");
+  expect(statusLineText()).toContain("Leave #secret?");
+  expect(statusLineText()).toContain("can't rejoin without an invite");
 
   await app.press("n");
 
@@ -235,7 +235,7 @@ test("a left click on the item chooses it", async () => {
   await app.click(popup.left + 3, popup.top + 4);
 
   expect(menu("#general")).toBeUndefined();
-  expect(statusBar()).toContain("Leave #general? y/n");
+  expect(statusLineText()).toContain("Leave #general? y/n");
 });
 
 test("a click on the popup's border does nothing, outside it closes the menu", async () => {
@@ -252,7 +252,7 @@ test("a click on the popup's border does nothing, outside it closes the menu", a
   await app.click(100, 27);
 
   expect(menu("#general")).toBeUndefined();
-  expect(statusBar()).not.toContain("y/n");
+  expect(statusLineText()).not.toContain("y/n");
 });
 
 test("the wheel moves the highlighted row without choosing", async () => {
@@ -276,7 +276,7 @@ test("Esc closes the menu and the sidebar has the keys again; other keys are tak
   await app.press("a");
 
   expect(menu("#general")).toBeDefined();
-  expect(statusBar()).not.toContain("Leave #general? y/n");
+  expect(statusLineText()).not.toContain("Leave #general? y/n");
 
   await app.press(keys.escape);
 

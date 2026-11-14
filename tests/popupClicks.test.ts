@@ -84,12 +84,12 @@ async function start() {
 }
 
 const screenRows = () => app!.screen().split("\n");
-const statusBar = () => statusLine(app!.screen());
+const statusLineText = () => statusLine(app!.screen());
 const paneText = () =>
   screenRows()
     .map((line) => line.slice(sidebarWidth))
     .join("\n");
-const messagesFocused = () => statusBar().includes("j/k select");
+const messagesFocused = () => statusLineText().includes("j/k select");
 
 /** Clicks the row of the popup titled `title` whose text contains `text`. */
 async function clickPopupRow(title: string, text: string, column = 5) {
@@ -245,7 +245,7 @@ describe("a y/n question", () => {
     await app!.press("x");
     await app!.waitForScreen("Leave #general? y/n");
     await app!.click(60, 10);
-    await waitFor(() => !statusBar().includes("y/n"));
+    await waitFor(() => !statusLineText().includes("y/n"));
 
     expect(messagesFocused()).toBe(false);
     expect(

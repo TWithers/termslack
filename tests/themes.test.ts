@@ -107,7 +107,6 @@ describe.each(omarchyNames)("the %s theme", (name) => {
   test("keeps the palette's own colours where it can", () => {
     expect(themed.paneBackground).toBe(palette.background);
     expect(themed.sidebarBackground).toBe(palette.darkBackground);
-    expect(themed.statusBarBackground).toBe(palette.darkerBackground);
     expect(themed.selectionBackground).toBe(palette.selection);
     expect(themed.focus).toBe(palette.accent);
     expect(themed.linkText).toBe(palette.blue);
@@ -117,8 +116,6 @@ describe.each(omarchyNames)("the %s theme", (name) => {
     const backgrounds = [
       themed.paneBackground,
       themed.sidebarBackground,
-      themed.statusBarBackground,
-      themed.inputBoxBackground,
       themed.popupBackground,
     ];
 
@@ -149,8 +146,6 @@ describe.each(omarchyNames)("the %s theme", (name) => {
       [themed.reactionText, themed.reactionBackground],
       [themed.ownReactionText, themed.ownReactionBackground],
       [themed.cursorText, themed.cursorBackground],
-      [themed.statusBarText, themed.statusBarBackground],
-      [themed.statusBarSecondaryText, themed.statusBarBackground],
       [themed.sidebarHeadingText, themed.sidebarBackground],
     ] as const;
 

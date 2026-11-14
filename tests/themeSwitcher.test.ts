@@ -95,7 +95,7 @@ const authorColourCode = () =>
 const popupRows = () => findPopup(app.screen(), title)?.rows ?? [];
 const coloredSidebarStatus = () =>
   app.coloredScreen().findLast((row) => Bun.stripANSI(row).startsWith("╰"))!;
-const statusBar = () => statusLine(app.screen());
+const statusLineText = () => statusLine(app.screen());
 const listed = () =>
   popupRows()
     .slice(1)
@@ -133,7 +133,7 @@ test("T opens the theme popup from the sidebar, listing slack-dark first, then t
   expect(findPopup(app.screen(), title)!.bottomBorder).toContain(
     "Enter keep and save",
   );
-  expect(statusBar()).not.toContain("Enter keep and save");
+  expect(statusLineText()).not.toContain("Enter keep and save");
 });
 
 test("the highlighted row starts on the theme in use", async () => {
@@ -322,7 +322,7 @@ test("Enter keeps the theme, closes the popup and writes theme to config.toml, k
   );
 });
 
-test("a theme that can't be saved is kept, and the status bar says so", async () => {
+test("a theme that can't be saved is kept, and the status line says so", async () => {
   await start({
     saveTheme: async () => {
       throw new Error("disk full");
@@ -333,7 +333,7 @@ test("a theme that can't be saved is kept, and the status bar says so", async ()
   await app.press(keys.enter);
   await app.waitForScreen("Couldn't save the theme");
 
-  expect(statusBar()).toContain("disk full");
+  expect(statusLineText()).toContain("disk full");
   expect(theme.paneBackground).toBe("#2e3440");
 });
 

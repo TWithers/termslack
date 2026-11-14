@@ -45,7 +45,7 @@ async function start(configured: SectionConfig[] = sections) {
   await app.waitForScreen("@Peter Venkman");
 }
 
-const statusBar = () => app.screen().trimEnd().split("\n").at(-1)!;
+const statusLineText = () => app.screen().trimEnd().split("\n").at(-1)!;
 const bottomLine = () => app.screen().trimEnd().split("\n").at(-2)!;
 const sectionPopup = () => findPopup(app.screen(), "New section");
 const promptText = () => sectionPopup()?.rows.join("\n") ?? "";
@@ -200,7 +200,7 @@ test("New section asks for a name; Enter adds it after the others with the chann
   expect(sectionPopup()!.bottomBorder).toContain("Enter create");
   expect(sectionPopup()!.bottomBorder).toContain("Esc cancel");
   expect(bottomLine()).not.toContain("New section");
-  expect(statusBar()).not.toContain("Enter create");
+  expect(statusLineText()).not.toContain("Enter create");
 
   await app.press("Home Office");
   await app.press(keys.enter);
