@@ -1,13 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-11-16
+
+### Added
+
+- Links in messages, search results and channel details are terminal hyperlinks (OSC 8): click a label, or the address after it, to open it in terminals that support them. Only `http`, `https` and `mailto` addresses are linked.
 
 ### Changed
 
+- The sidebar, panes and popups are rounded boxes with their titles on the border; the focused one is drawn in the focus colour. Each pane's input sits inside it under a divider.
+- The status bar is gone: the message pane's bottom border is now the status line (a question, else notices, else the keys for what has focus), and the connection moves to the sidebar's bottom border. Popups show their keys on their bottom border.
+- Keys in the key hints are drawn in the theme's focus colour so they stand out from what they do.
 - README is now short; details moved to docs/guide.md and CONTRIBUTING.md.
 
 ### Fixed
 
+- Emoji-styled symbols (❤️, ⚠️) are drawn as their plain one-cell symbol and keycaps (1️⃣) as their character, so rows line up in every terminal.
 - On macOS, startup no longer shows the Keychain password prompt many times: each workspace's credentials are read once per run and written only when they change.
 
 ## 0.1.0 - 2026-11-13
