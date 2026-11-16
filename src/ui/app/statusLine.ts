@@ -106,7 +106,8 @@ export function connectionWord(status: SocketStatus): string {
 /**
  * The message pane's bottom border: a question first (the prompt colour), else
  * the notices and warnings joined (the warning colour), else the keys of what
- * has focus, shortened as the border narrows (`keyVariants`). Nothing when
+ * has focus (the keys stand out from what they do), shortened as the border
+ * narrows (`keyVariants`). Nothing when
  * there is none of these.
  */
 export function statusLineLabel({
@@ -138,7 +139,11 @@ export function statusLineLabel({
     return undefined;
   }
 
-  return { text: keyVariants(keys), color: theme.secondaryText };
+  return {
+    text: keyVariants(keys),
+    color: theme.secondaryText,
+    keyColor: theme.keyHintText,
+  };
 }
 
 /**

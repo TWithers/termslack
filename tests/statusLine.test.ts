@@ -136,10 +136,19 @@ describe("keys for what has focus", () => {
     expect(app.screen()).not.toContain("press i to write");
   });
 
-  test("keys are drawn in the secondary text colour", async () => {
+  test("keys are drawn in the key hint colour, what they do in the secondary text colour", async () => {
     await start();
 
-    expect(foregroundAt(coloredLine(), "j/k move")).toBe(
+    expect(foregroundAt(coloredLine(), "j/k")).toBe(
+      foregroundCode(theme.keyHintText),
+    );
+    expect(foregroundAt(coloredLine(), " move")).toBe(
+      foregroundCode(theme.secondaryText),
+    );
+    expect(foregroundAt(coloredLine(), "?")).toBe(
+      foregroundCode(theme.keyHintText),
+    );
+    expect(foregroundAt(coloredLine(), " help")).toBe(
       foregroundCode(theme.secondaryText),
     );
   });

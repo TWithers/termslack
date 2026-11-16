@@ -3,6 +3,7 @@ import {
   borderLabelRoom,
   fitBorderLabels,
   keepEndingVariants,
+  keyHintRuns,
   keyVariants,
 } from "../src/ui/borderLabels";
 import { cellWidth } from "../src/ui/terminalSafeText";
@@ -220,5 +221,77 @@ describe("labels whose ending must stay", () => {
     expect(fitBorderLabels(24, { bottomLeft: question }).bottomLeft).toBe(
       "Leave #a-very-…? y/n",
     );
+  });
+});
+
+describe("the keys in key hints", () => {
+  const keysOf = (text: string) =>
+    keyHintRuns(text)
+      .filter(({ key }) => key)
+      .map(({ text }) => text);
+
+  test("each hint's key is its first word, the rest describes it", () => {
+    expect(keyHintRuns("j/k move · Esc close")).toEqual([
+      { text: "j/k", key: true },
+      { text: " move · ", key: false },
+      { text: "Esc", key: true },
+      { text: " close", key: false },
+    ]);
+  });
+
+  test("the runs make up the whole text", () => {
+    const text = "j/k select · i write · Enter/t open or start thread · ? help";
+
+    expect(
+      keyHintRuns(text)
+        .map(({ text }) => text)
+        .join(""),
+    ).toBe(text);
+  });
+
+  test("single letters, symbols, capitalised names and chords are keys", () => {
+    expect(
+      keysOf(
+        "M hide muted · ? help · PgUp/PgDn page · Ctrl+T also send · Alt+Enter/Ctrl+J newline · ↑/↓ choose · Tab complete",
+      ),
+    ).toEqual([
+      "M",
+      "?",
+      "PgUp/PgDn",
+      "Ctrl+T",
+      "Alt+Enter/Ctrl+J",
+      "↑/↓",
+      "Tab",
+    ]);
+  });
+
+  test("alternatives joined by 'or' are all keys, the 'or' is not", () => {
+    expect(keyHintRuns("Esc or ? close")).toEqual([
+      { text: "Esc", key: true },
+      { text: " or ", key: false },
+      { text: "?", key: true },
+      { text: " close", key: false },
+    ]);
+    expect(keysOf("j/k or ↑/↓ move")).toEqual(["j/k", "↑/↓"]);
+  });
+
+  test("an 'or' later in the description is not a key", () => {
+    expect(keysOf("Enter search or open")).toEqual(["Enter"]);
+  });
+
+  test("a hint that starts with an ordinary word has no key", () => {
+    expect(keysOf("type to filter · ↑/↓ choose")).toEqual(["↑/↓"]);
+    expect(keysOf("type a query")).toEqual([]);
+  });
+
+  test("what comes before a dash is a note, and the key follows it", () => {
+    expect(keysOf("Editing — Enter saves · Esc cancels")).toEqual([
+      "Enter",
+      "Esc",
+    ]);
+  });
+
+  test("a hint cut with an ellipsis keeps its key", () => {
+    expect(keysOf("Esc c…")).toEqual(["Esc"]);
   });
 });

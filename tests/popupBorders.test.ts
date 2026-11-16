@@ -157,6 +157,7 @@ describe("colours follow the theme", () => {
       expect(top).toContain(code(48, theme.popupBackground));
       expect(bottom).toContain(code(38, theme.popupBorder));
       expect(bottom).toContain(code(38, theme.secondaryText));
+      expect(bottom).toContain(code(38, theme.keyHintText));
       expect(bottom).toContain(code(48, theme.popupBackground));
     };
 

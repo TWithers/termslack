@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Text } from "./SafeText";
 import {
   fitBorderLabels,
+  keyHintRuns,
   type BorderLabel,
   type BorderLabels,
 } from "./borderLabels";
@@ -14,6 +15,8 @@ export type TitledLabel = {
   bold?: boolean;
   /** The start of the label (every form begins with it) drawn in its own colour, the rest in `color`. */
   lead?: { text: string; color: string };
+  /** For key hints: each key (see `keyHintRuns`) drawn in this colour, the words around them in `color`. */
+  keyColor?: string;
 };
 
 export type TitledBoxLabels = {
@@ -38,6 +41,38 @@ function leadLength(text: string, lead: TitledLabel["lead"]): number {
   }
 
   return length;
+}
+
+/** What a fitted label draws between its spaces: the lead in its colour, the keys in theirs, or the plain text. */
+function LabelText({ text, label }: { text: string; label: TitledLabel }) {
+  const lead = leadLength(text, label.lead);
+
+  if (lead > 0) {
+    return (
+      <>
+        <Text color={label.lead!.color}>{text.slice(0, lead)}</Text>
+        {text.slice(lead)}
+      </>
+    );
+  }
+
+  if (!label.keyColor) {
+    return <>{text}</>;
+  }
+
+  return (
+    <>
+      {keyHintRuns(text).map((run, index) =>
+        run.key ? (
+          <Text key={index} color={label.keyColor}>
+            {run.text}
+          </Text>
+        ) : (
+          run.text
+        ),
+      )}
+    </>
+  );
 }
 
 const places: Record<
@@ -117,16 +152,7 @@ export function TitledBox({
               backgroundColor={background}
             >
               {" "}
-              {leadLength(text, label.lead) > 0 ? (
-                <>
-                  <Text color={label.lead!.color}>
-                    {text.slice(0, leadLength(text, label.lead))}
-                  </Text>
-                  {text.slice(leadLength(text, label.lead))}
-                </>
-              ) : (
-                text
-              )}{" "}
+              <LabelText text={text} label={label} />{" "}
             </Text>
           </Box>
         );

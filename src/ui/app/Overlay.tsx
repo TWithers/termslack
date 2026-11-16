@@ -269,6 +269,7 @@ export function Overlay({
               bottomLeft: {
                 text: keyVariants(keys),
                 color: theme.secondaryText,
+                keyColor: theme.keyHintText,
               },
             }),
       }}

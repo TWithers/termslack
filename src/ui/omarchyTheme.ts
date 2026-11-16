@@ -65,6 +65,7 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
     popupBorder: mixColours(muted, foreground, 0.35),
     popupTitle: accent,
     helpKeyText: yellow,
+    keyHintText: onEveryBackground(accent),
     selectedMessageBar: accent,
 
     cursorBackground: foreground,

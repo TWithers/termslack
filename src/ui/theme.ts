@@ -40,6 +40,8 @@ export type Theme = {
   popupTitle: string;
   /** The help's key column. */
   helpKeyText: string;
+  /** The keys in the key hints on a status line or popup border. */
+  keyHintText: string;
   /** The `▌` bar beside the selected message. */
   selectedMessageBar: string;
 
@@ -131,6 +133,7 @@ export const slackDark: Theme = {
   popupBorder: "#868686",
   popupTitle: "#36c5f0",
   helpKeyText: "#ecb22e",
+  keyHintText: "#36c5f0",
   selectedMessageBar: "#36c5f0",
 
   cursorBackground: "#d1d2d3",

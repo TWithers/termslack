@@ -63,6 +63,85 @@ export function keyVariants(text: string): string[] {
 
 const segmenter = new Intl.Segmenter();
 
+/** A piece of key hints: a key, or the words around the keys. */
+export type KeyHintRun = { text: string; key: boolean };
+
+const noteDash = " — ";
+
+/** Whether a hint's word names a key: a single character ("?", "M"), a chord or choice ("Ctrl+T", "j/k"), or a capitalised name ("Enter", "PgUp"). */
+function isKey(word: string | undefined): boolean {
+  if (!word) {
+    return false;
+  }
+
+  if ([...segmenter.segment(word)].length === 1) {
+    return true;
+  }
+
+  return /[/+]/.test(word) || /^\p{Lu}/u.test(word);
+}
+
+/** One hint ("Esc or ? close") as runs: its leading keys, joined by "or", then what they do. */
+function hintRuns(hint: string): KeyHintRun[] {
+  const dash = hint.indexOf(noteDash);
+
+  if (dash >= 0) {
+    const note = hint.slice(0, dash + noteDash.length);
+
+    return [{ text: note, key: false }, ...hintRuns(hint.slice(note.length))];
+  }
+
+  const words = hint.split(" ");
+
+  if (!isKey(words[0])) {
+    return [{ text: hint, key: false }];
+  }
+
+  const runs: KeyHintRun[] = [{ text: words[0]!, key: true }];
+  let at = 1;
+
+  while (words[at] === "or" && isKey(words[at + 1])) {
+    runs.push(
+      { text: " or ", key: false },
+      { text: words[at + 1]!, key: true },
+    );
+    at += 2;
+  }
+
+  const rest = words.slice(at).join(" ");
+
+  return rest === "" ? runs : [...runs, { text: ` ${rest}`, key: false }];
+}
+
+/**
+ * Key hints as `keyVariants` makes them ("j/k move · Esc close") split into
+ * the keys and the words around them, so the keys can be drawn in their own
+ * colour. Joined, the runs are `text` again.
+ */
+export function keyHintRuns(text: string): KeyHintRun[] {
+  const runs = text
+    .split(separator)
+    .flatMap((hint, index) =>
+      index === 0
+        ? hintRuns(hint)
+        : [{ text: separator, key: false }, ...hintRuns(hint)],
+    );
+
+  return runs.reduce<KeyHintRun[]>((merged, run) => {
+    const last = merged.at(-1);
+
+    if (last && !last.key && !run.key) {
+      last.text += run.text;
+
+      return merged;
+    }
+
+    merged.push({ ...run });
+
+    return merged;
+  }, []);
+}
+
 /**
  * `text` in the forms that `fitBorderLabels` tries when its ending must
  * survive ("Leave #general? y/n", ending "? y/n"): whole, then with the

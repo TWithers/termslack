@@ -59,7 +59,11 @@ export function PromptPopup({
       background={theme.popupBackground}
       labels={{
         topLeft: { text: title, color: theme.popupTitle, bold: true },
-        bottomLeft: { text: keyVariants(keys), color: theme.secondaryText },
+        bottomLeft: {
+          text: keyVariants(keys),
+          color: theme.secondaryText,
+          keyColor: theme.keyHintText,
+        },
       }}
     >
       <Box
