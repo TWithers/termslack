@@ -10,7 +10,7 @@ const general = "C012AB3CD";
 const me = "U123ABC456";
 const ts = "1762286400.000100";
 const columns = 100;
-const undrawable = /[\u{1F3FB}-\u{1F3FF}‍]/u;
+const undrawable = /[\u{1F3FB}-\u{1F3FF}\u200D\uFE0F\u20E3]/u;
 
 async function start() {
   app = await startAppHarness({
@@ -24,11 +24,12 @@ async function start() {
             {
               type: "message",
               user: "U222222222",
-              text: "nice 👍🏽 family 👨‍👩‍👧 and :+1::skin-tone-3: and :man-woman-girl:",
+              text: "nice 👍🏽 family 👨‍👩‍👧 and :+1::skin-tone-3: and :man-woman-girl: love ❤️ step 1️⃣ :warning:",
               ts,
               reactions: [
                 { name: "+1", users: ["U222222222"], count: 2 },
                 { name: "+1::skin-tone-2", users: [me], count: 1 },
+                { name: "heart", users: ["U222222222"], count: 1 },
               ],
             },
           ],
@@ -45,7 +46,7 @@ async function start() {
 const calls = (method: string) =>
   app.slack.calls.filter((call) => call.method === method);
 
-test("rows never hold a skin tone or joiner and never measure wider than the screen", async () => {
+test("rows never hold a skin tone, joiner, emoji selector or keycap mark and never measure wider than the screen", async () => {
   await start();
   await app.press("i");
   await app.press("a 👍🏻 typed 🧑‍💻");
@@ -55,6 +56,8 @@ test("rows never hold a skin tone or joiner and never measure wider than the scr
   expect(lines.join("\n")).toContain("👍 2");
   expect(lines.join("\n")).toContain("a 👍 typed 🧑💻");
   expect(lines.join("\n")).toContain("👨👩👧");
+  expect(lines.join("\n")).toContain("love ❤ step 1 ⚠");
+  expect(lines.join("\n")).toContain("❤ 1");
 
   for (const frame of app.frames()) {
     expect(frame).not.toMatch(undrawable);

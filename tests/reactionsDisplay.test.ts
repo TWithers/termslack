@@ -104,18 +104,18 @@ test("live adds and removes update the counts, and the last removal clears the l
   await waitForPane("🎉 2");
 
   await react("added", "U2", "heart");
-  await waitForPane("🎉 2  ❤️ 1");
+  await waitForPane("🎉 2  ❤ 1");
 
   await react("removed", "U1", "tada");
   await react("removed", "U2", "tada");
-  await waitForPane("❤️ 1");
+  await waitForPane("❤ 1");
 
   expect(screenText()).not.toContain("🎉");
 
   await react("removed", "U2", "heart");
   await Bun.sleep(50);
 
-  expect(screenText()).not.toContain("❤️");
+  expect(screenText()).not.toContain("❤");
 });
 
 test("reactions on a message that isn't stored don't throw and the log line still prints", async () => {
@@ -148,17 +148,17 @@ test("the user's own reactions are marked, others are not", async () => {
       ?.backgroundColor === theme.ownReactionBackground;
 
   expect(marked("🎉")).toBe(true);
-  expect(marked("❤️")).toBe(false);
+  expect(marked("❤")).toBe(false);
 
   await react("added", me, "heart");
-  await waitForPane("❤️ 2");
+  await waitForPane("❤ 2");
 
   const [after] = conversationRows(app.session, general, 100).rows.filter(
     (row) => row.kind === "reactions",
   );
 
   expect(
-    after?.runs.find((run) => run.text.includes("❤️"))?.backgroundColor,
+    after?.runs.find((run) => run.text.includes("❤"))?.backgroundColor,
   ).toBe(theme.ownReactionBackground);
 });
 

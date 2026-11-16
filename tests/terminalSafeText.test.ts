@@ -25,15 +25,41 @@ test("skin tones from shortcodes are left out", () => {
 
 test.each([
   ["a family", "👨‍👩‍👧", "👨👩👧"],
-  ["a rainbow flag", "🏳️‍🌈", "🏳️🌈"],
+  ["a rainbow flag", "🏳️‍🌈", "🏳🌈"],
   ["a profession", "🧑‍💻", "🧑💻"],
   ["a profession with a skin tone", "🧑🏽‍💻", "🧑💻"],
 ])("a joined sequence is split into its parts: %s", (_, text, expected) => {
   expect(terminalSafeText(text)).toBe(expected);
 });
 
-test("text with neither is unchanged", () => {
-  const text = "plain ❤️ 1️⃣ 🇺🇸 🎉 日本語 é";
+test.each([
+  ["a red heart", "❤️", "❤"],
+  ["a warning sign", "⚠️", "⚠"],
+  ["a smile mid-sentence", "thanks ☺️ really", "thanks ☺ really"],
+  ["a check mark", "✔️", "✔"],
+  ["a sun", "☀️", "☀"],
+])("a symbol asked to be drawn as emoji is drawn plain, one cell: %s", (_, text, expected) => {
+  expect(terminalSafeText(text)).toBe(expected);
+  expect(cellWidth(text)).toBe(Bun.stringWidth(expected));
+});
+
+test("a symbol asked to be drawn as emoji measures one cell, as every terminal draws it", () => {
+  for (const text of ["❤️", "⚠️", "☺️", "✔️", "☀️", "✌️"]) {
+    expect(cellWidth(text)).toBe(1);
+  }
+});
+
+test.each([
+  ["one", "1️⃣", "1"],
+  ["hash", "#️⃣", "#"],
+  ["star", "*️⃣", "*"],
+])("a keycap is drawn as its character: %s", (_, text, expected) => {
+  expect(terminalSafeText(text)).toBe(expected);
+  expect(cellWidth(text)).toBe(1);
+});
+
+test("text with none of these is unchanged", () => {
+  const text = "plain 🇺🇸 🎉 👍 ✨ 日本語 é";
 
   expect(terminalSafeText(text)).toBe(text);
 });

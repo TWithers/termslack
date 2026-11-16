@@ -227,7 +227,7 @@ test("your own reactions are highlighted in the reaction line, including a new o
     row?.runs.find((run) => run.text.includes(text))?.backgroundColor ===
     theme.ownReactionBackground;
 
-  expect(marked("❤️")).toBe(true);
+  expect(marked("❤")).toBe(true);
   expect(marked("👀")).toBe(true);
 });
 
