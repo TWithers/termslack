@@ -213,6 +213,19 @@ test("Slack formatting in the topic and description shows as it does in messages
   expect(shown).not.toContain("<@");
 });
 
+test("a link in the topic is a terminal hyperlink, as it is in messages", async () => {
+  await start({
+    info: { topic: { value: "See <https://example.com|docs>" } },
+  });
+
+  await openDetails();
+  await app.waitForScreen("#general details");
+
+  expect(app.coloredScreen().join("\n")).toContain(
+    "\u001b]8;;https://example.com\u001b\\docs",
+  );
+});
+
 test("it says it is loading while Slack answers, and shows the answer after", async () => {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));

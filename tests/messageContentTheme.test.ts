@@ -30,14 +30,20 @@ type Part = { text: string; foreground?: string; background?: string };
 const hex = (red: string, green: string, blue: string) =>
   `#${[red, green, blue].map((value) => Number(value).toString(16).padStart(2, "0")).join("")}`;
 
-/** The pieces of a coloured row with the foreground and background each was drawn in. */
+/** The pieces of a coloured row with the foreground and background each was drawn in; hyperlink escapes are skipped. */
 function parts(row: string): Part[] {
   const found: Part[] = [];
   let foreground: string | undefined;
   let background: string | undefined;
 
-  for (const piece of row.split(/(\u001b\[[0-9;]*m)/)) {
+  for (const piece of row.split(
+    /(\u001b\[[0-9;]*m|\u001b\]8;;[^\u0007\u001b]*(?:\u0007|\u001b\\))/,
+  )) {
     const code = /^\u001b\[([0-9;]*)m$/.exec(piece)?.[1];
+
+    if (piece.startsWith("\u001b]")) {
+      continue;
+    }
 
     if (code === undefined) {
       found.push({ text: piece, foreground, background });
@@ -92,7 +98,7 @@ function expectThemedMessage() {
     foreground: theme.codeBlockText,
     background: theme.codeBlockBackground,
   });
-  expect(partWith(" (https://x.test/a)")).toMatchObject({
+  expect(partWith("(https://x.test/a)")).toMatchObject({
     foreground: theme.linkAddressText,
   });
 }

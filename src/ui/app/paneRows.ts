@@ -112,7 +112,10 @@ export function inlineRuns(
     return [
       { text, ...style },
       ...(trailing && !compact
-        ? [{ text: ` ${trailing}`, color: theme.linkAddressText }]
+        ? [
+            { text: " " },
+            { text: trailing, color: theme.linkAddressText, url: style.url },
+          ]
         : []),
     ];
   });

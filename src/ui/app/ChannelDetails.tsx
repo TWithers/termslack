@@ -7,6 +7,7 @@ import { cellWidth } from "../terminalSafeText";
 import { theme } from "../theme";
 import type { OverlayItem } from "./Overlay";
 import { inlineRuns } from "./paneRows";
+import { RunText } from "./RunsText";
 import { type Run, wrapRuns } from "./wrap";
 
 /** What the keys do while the channel details are open; drawn on its bottom border. */
@@ -91,17 +92,7 @@ export function channelDetailsItems(
               : " ".repeat(indent)}
           </Text>
           {line.map((run, at) => (
-            <Text
-              key={at}
-              color={run.color ?? theme.text}
-              backgroundColor={run.backgroundColor}
-              bold={run.bold}
-              underline={run.underline}
-              italic={run.italic}
-              strikethrough={run.strikethrough}
-            >
-              {run.text}
-            </Text>
+            <RunText key={at} run={run} />
           ))}
         </Text>
       ),

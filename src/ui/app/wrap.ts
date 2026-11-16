@@ -9,6 +9,8 @@ export type Run = {
   underline?: boolean;
   italic?: boolean;
   strikethrough?: boolean;
+  /** The address the text is a terminal hyperlink to (see `hyperlink`). */
+  url?: string;
 };
 
 type Cell = { grapheme: string; width: number; style: Omit<Run, "text"> };
@@ -22,7 +24,8 @@ function sameStyle(a: Omit<Run, "text">, b: Omit<Run, "text">): boolean {
     a.bold === b.bold &&
     a.underline === b.underline &&
     a.italic === b.italic &&
-    a.strikethrough === b.strikethrough
+    a.strikethrough === b.strikethrough &&
+    a.url === b.url
   );
 }
 

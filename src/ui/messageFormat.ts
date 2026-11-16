@@ -25,6 +25,8 @@ export type SegmentStyle = {
   strikethrough?: boolean;
   /** Dim text drawn after the segment: a link's address when it differs from its label. */
   trailing?: string;
+  /** Where the segment, and its trailing address, link to. */
+  url?: string;
 };
 
 /** Says how each kind of segment looks; the renderer only says what the pieces are. `currentUserId` is who is looking, so a mention of them stands out. */
@@ -92,6 +94,7 @@ function kindStyle(
         text: segment.text,
         color: theme.linkText,
         underline: true,
+        url: segment.url,
         ...(segment.text === segment.url
           ? {}
           : { trailing: `(${segment.url})` }),
