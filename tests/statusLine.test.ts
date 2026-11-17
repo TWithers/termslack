@@ -12,7 +12,7 @@ import {
   foregroundCode,
   useTerminalColour,
 } from "./support/colours";
-import { waitFor } from "./support/fakeSlack";
+import { reconnectPingTimeoutMs, waitFor } from "./support/fakeSlack";
 import { sidebarStatus, statusLine } from "./support/panes";
 
 useTerminalColour();
@@ -273,7 +273,7 @@ describe("the sidebar's bottom border", () => {
   });
 
   test("says reconnecting in the connecting colour while the socket is down", async () => {
-    await start({ clientPingTimeout: 50 });
+    await start({ clientPingTimeout: reconnectPingTimeoutMs });
 
     app.slack.send({ type: "disconnect", reason: "refresh_requested" });
 

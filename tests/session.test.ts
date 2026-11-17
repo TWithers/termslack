@@ -4,12 +4,14 @@ import {
   type SessionHarness,
   startSessionHarness,
 } from "./support/sessionHarness";
-import { waitFor } from "./support/fakeSlack";
+import { reconnectPingTimeoutMs, waitFor } from "./support/fakeSlack";
 
 let harness: SessionHarness;
 
 beforeEach(async () => {
-  harness = await startSessionHarness({ clientPingTimeout: 50 });
+  harness = await startSessionHarness({
+    clientPingTimeout: reconnectPingTimeoutMs,
+  });
 });
 
 afterEach(() => harness.stop());

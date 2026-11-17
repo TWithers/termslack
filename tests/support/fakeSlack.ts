@@ -225,6 +225,16 @@ export function startFakeSlack(): FakeSlack {
   };
 }
 
+/**
+ * The `clientPingTimeout` for tests that make the socket reconnect. The Slack
+ * SDK uses it both as the delay before reconnecting (why tests shorten it from
+ * 5 s) and as how long it waits for a pong: when more time than this passes
+ * since the last pong, it drops a healthy connection and reconnects on its
+ * own, and events the test sends meanwhile are lost. A test process can freeze
+ * for 50 ms or more while it draws the app, so this is set well above that.
+ */
+export const reconnectPingTimeoutMs = 500;
+
 /** Polls until `check` returns something truthy, or fails after `timeoutMs`. */
 export async function waitFor<T>(
   check: () => T | false | undefined | null,

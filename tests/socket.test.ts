@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import type { SocketModeClient } from "@slack/socket-mode";
 import { connectSocket, type SocketStatus } from "../src/slack/socket";
-import { type FakeSlack, startFakeSlack, waitFor } from "./support/fakeSlack";
+import {
+  type FakeSlack,
+  reconnectPingTimeoutMs,
+  startFakeSlack,
+  waitFor,
+} from "./support/fakeSlack";
 
 let slack: FakeSlack;
 let client: SocketModeClient | undefined;
@@ -74,7 +79,7 @@ test("reconnects with a fresh URL when Slack sends disconnect", async () => {
   client = await connectSocket(
     "xapp-test",
     { onEvent: ignore, onStatus: (status) => statuses.push(status) },
-    { clientPingTimeout: 50 },
+    { clientPingTimeout: reconnectPingTimeoutMs },
   );
 
   slack.send({ type: "disconnect", reason: "refresh_requested" });

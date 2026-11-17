@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { loadPayload } from "./support/fixtures";
-import { waitFor } from "./support/fakeSlack";
+import { reconnectPingTimeoutMs, waitFor } from "./support/fakeSlack";
 import { sidebarGroups } from "../src/ui/app/sidebarEntries";
 import { type AppHarness, keys, startAppHarness } from "./support/appHarness";
 import { sidebarStatus, statusLine } from "./support/panes";
@@ -115,7 +115,7 @@ test("the sidebar shows the workspace on its top border and the connection on it
 });
 
 test("the sidebar's connection follows a reconnect", async () => {
-  await start({ clientPingTimeout: 50 });
+  await start({ clientPingTimeout: reconnectPingTimeoutMs });
 
   app.slack.send({ type: "disconnect", reason: "refresh_requested" });
 
@@ -183,7 +183,7 @@ test("Ctrl+C quits and disconnects the session", async () => {
 
 test("after Slack asks for a reconnect, new messages still reach the open pane and the sidebar markers", async () => {
   await start({
-    clientPingTimeout: 50,
+    clientPingTimeout: reconnectPingTimeoutMs,
     prepare: (slack) =>
       slack.respond("conversations.history", () => ({
         ok: true,
