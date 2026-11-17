@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-11-17
+
+### Fixed
+
+- The reconnect tests no longer fail intermittently: they gave the Slack SDK only 50 ms to see a pong, so a slow frame made it drop a healthy connection and lose the events sent to it. No change to termslack itself.
+
 ## 0.2.0 - 2026-11-16
 
 ### Added
