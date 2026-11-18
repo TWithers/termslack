@@ -184,6 +184,7 @@ test("j/k move the highlight and Enter chooses: Leave asks the same question as 
   await app.press("j");
   await app.press("j");
   await app.press("j");
+  await app.press("j");
   await app.press("k");
   await app.press("j");
   await app.press(keys.enter);
@@ -232,7 +233,7 @@ test("a left click on the item chooses it", async () => {
 
   const popup = menu("#general")!;
 
-  await app.click(popup.left + 3, popup.top + 4);
+  await app.click(popup.left + 3, popup.top + 5);
 
   expect(menu("#general")).toBeUndefined();
   expect(statusLineText()).toContain("Leave #general? y/n");

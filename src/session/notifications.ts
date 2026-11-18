@@ -17,7 +17,7 @@ export const defaultNotificationWindowMs = 1000;
  * The least time between two notifications. What arrives sooner than this
  * after one went out is held, and goes out together when it is up.
  */
-export const notificationIntervalMs = 60_000;
+export const notificationIntervalMs = 5000;
 
 /** One message that earned a notification. */
 export type NotifiedMessage = Author & {
@@ -155,7 +155,8 @@ export type Notifications = {
   /** Calls `listener` with each notification. Returns an unsubscribe function. */
   subscribe(listener: NotificationListener): () => void;
   /**
-   * Considers a new live message that would get a mention marker. It is
+   * Considers a new live message that should notify (a mention, or any new
+   * message in a channel set to notify for all of them). It is
    * dropped while Do Not Disturb is on or the terminal is known to be focused;
    * otherwise it goes out with the next notification (see `notificationIntervalMs`).
    */

@@ -6,7 +6,11 @@ import {
   type WorkspaceSession,
 } from "../../src/session/workspaceSession";
 import type { SectionConfig } from "../../src/config/config";
-import type { MuteMemory, SectionsMemory } from "../../src/config/state";
+import type {
+  MuteMemory,
+  NotificationLevelMemory,
+  SectionsMemory,
+} from "../../src/config/state";
 import type { PresenceOptions } from "../../src/session/presence";
 import type { Clock } from "../../src/session/clock";
 import type { SessionEvent, SlackEvent } from "../../src/session/events";
@@ -46,6 +50,8 @@ export async function startSessionHarness(
     unreadCheck?: UnreadCheckOptions;
     /** Where muted channels are remembered (see `SessionOptions.muteMemory`). Default: nothing. */
     muteMemory?: MuteMemory;
+    /** Where per-channel notification levels are remembered (see `SessionOptions.notificationLevelMemory`). Default: nothing. */
+    notificationLevelMemory?: NotificationLevelMemory;
     /** The sections `config.toml` names (see `SessionOptions.configuredSections`). Default: none. */
     configuredSections?: SectionConfig[];
     /** Where the sections termslack keeps are remembered (see `SessionOptions.sectionsMemory`). Default: nothing. */
@@ -56,7 +62,7 @@ export async function startSessionHarness(
     clock?: Clock;
     /** How long notifications are gathered into one. Default: the session's own. */
     notificationWindowMs?: number;
-    /** The least time between notifications. Default: none, so tests see each window's burst; the session's own is 60 s. */
+    /** The least time between notifications. Default: none, so tests see each window's burst; the session's own is 5 s. */
     notificationIntervalMs?: number;
     /** The presence polling budget (see `SessionOptions.presence`). Default: the session's own. */
     presence?: PresenceOptions;
@@ -81,6 +87,7 @@ export async function startSessionHarness(
       dmActivity: options.dmActivity,
       unreadCheck: options.unreadCheck,
       muteMemory: options.muteMemory,
+      notificationLevelMemory: options.notificationLevelMemory,
       configuredSections: options.configuredSections,
       sectionsMemory: options.sectionsMemory,
       readMarkDebounceMs: options.readMarkDebounceMs,

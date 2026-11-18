@@ -88,6 +88,9 @@ export function usePopups({
       leave: leavePrompt.ask,
       isMuted: (channel) => session.isMuted(channel.id),
       setMuted: (channel, muted) => session.setMuted(channel.id, muted),
+      notificationLevel: (channel) => session.notificationLevel(channel.id),
+      setNotificationLevel: (channel, level) =>
+        session.setNotificationLevel(channel.id, level),
       details: (channel) =>
         channelDetails.open(channel, sectionName(channel.id)),
       sections: (channel) => ({

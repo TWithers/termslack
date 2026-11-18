@@ -18,6 +18,7 @@ import {
   workspaceConversationMemory,
   workspaceDmActivityCache,
   workspaceMuteMemory,
+  workspaceNotificationLevelMemory,
   workspaceSectionsMemory,
 } from "./config/state";
 import { updateSecrets } from "./config/secrets";
@@ -176,6 +177,9 @@ async function connect(): Promise<Connected> {
         : { cache: teamId ? workspaceDmActivityCache(teamId) : undefined },
       unreadCheck: options.log ? undefined : {},
       muteMemory: teamId ? workspaceMuteMemory(teamId) : undefined,
+      notificationLevelMemory: teamId
+        ? workspaceNotificationLevelMemory(teamId)
+        : undefined,
       configuredSections: parseSections(sections),
       sectionsMemory: teamId ? workspaceSectionsMemory(teamId) : undefined,
     },

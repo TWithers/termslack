@@ -39,8 +39,16 @@ import {
   type ChannelDetailsResult,
 } from "./channelDetails";
 import type { SectionConfig } from "../config/config";
-import type { MuteMemory, SectionsMemory } from "../config/state";
+import type {
+  MuteMemory,
+  NotificationLevelMemory,
+  SectionsMemory,
+} from "../config/state";
 import { createMutedChannels } from "./mutedChannels";
+import {
+  createNotificationLevels,
+  type NotificationLevel,
+} from "./notificationLevels";
 import { createSections, type SectionChange } from "./sections";
 import { createChannelLeaves, type LeaveChannelResult } from "./channelLeave";
 import type { ConversationResult } from "./conversationCommand";
@@ -146,6 +154,11 @@ export type SessionOptions = {
    * nothing is remembered.
    */
   muteMemory?: MuteMemory;
+  /**
+   * Where what each channel notifies for is remembered between runs. Default:
+   * nothing is remembered.
+   */
+  notificationLevelMemory?: NotificationLevelMemory;
   /**
    * The sidebar sections from `config.toml`, used until termslack keeps its own
    * (see `sections`). Default: none.
@@ -372,6 +385,17 @@ export type WorkspaceSession = {
    * (here or elsewhere) unmutes it.
    */
   setMuted(conversationId: string, muted: boolean): void;
+  /**
+   * What the channel notifies for: mentions (the default, and always for DMs),
+   * every new message, or nothing. termslack's own, like muting (Slack's API
+   * won't share the user's settings), loaded from the state file at `start`.
+   */
+  notificationLevel(conversationId: string): NotificationLevel;
+  /**
+   * Sets what a channel notifies for at once and remembers it. Leaving the
+   * channel (here or elsewhere) puts it back on mentions.
+   */
+  setNotificationLevel(conversationId: string, level: NotificationLevel): void;
   /**
    * The sidebar's sections, in order, channels by ID, name or `#name`: the
    * config's until the first change, termslack's own (loaded from the state file at
@@ -632,6 +656,7 @@ export function createWorkspaceSession(
     dmActivity: dmActivityOptions,
     unreadCheck: unreadCheckOptions,
     muteMemory,
+    notificationLevelMemory,
     configuredSections = [],
     sectionsMemory,
     readMarkDebounceMs = defaultReadMarkDebounceMs,
@@ -647,6 +672,10 @@ export function createWorkspaceSession(
   const unread = createUnreadTracker(changes);
   const muted = createMutedChannels({
     memory: muteMemory,
+    changed: changes.changed,
+  });
+  const notificationLevels = createNotificationLevels({
+    memory: notificationLevelMemory,
     changed: changes.changed,
   });
   const sections = createSections({
@@ -1095,7 +1124,10 @@ export function createWorkspaceSession(
 
     unread.record(event.channelId, attention);
 
-    if (attention === "mention" && !muted.isMuted(event.channelId)) {
+    if (
+      !muted.isMuted(event.channelId) &&
+      notificationLevels.notifies(event.channelId, attention)
+    ) {
       notifications.consider({
         ...event,
         channelKind:
@@ -1104,11 +1136,16 @@ export function createWorkspaceSession(
     }
   }
 
-  /** Leaving a channel (from here or another device) forgets that it was muted. */
-  function forgetMuteIfLeft(id: string): void {
+  /** Leaving a channel (from here or another device) forgets that it was muted and what it notifies for. */
+  function forgetSettingsIfLeft(id: string): void {
     if (store.conversation(id)?.isMember === false) {
-      muted.setMuted(id, false);
+      forgetSettings(id);
     }
+  }
+
+  function forgetSettings(id: string): void {
+    muted.setMuted(id, false);
+    notificationLevels.setLevel(id, "mentions");
   }
 
   /** Once a conversation's history is loaded, being open clears its sidebar marker and marks it read; until then it does neither. */
@@ -1175,7 +1212,7 @@ export function createWorkspaceSession(
       const me = (await within(currentUserId, nameWaitMs)) ?? currentUser;
 
       store.applyConversationEvent(event, me);
-      forgetMuteIfLeft(event.channelId);
+      forgetSettingsIfLeft(event.channelId);
     }
 
     if (event.kind === "user") {
@@ -1334,13 +1371,15 @@ export function createWorkspaceSession(
       const result = await channelLeaves.leave(id);
 
       if (result.ok) {
-        muted.setMuted(id, false);
+        forgetSettings(id);
       }
 
       return result;
     },
     isMuted: muted.isMuted,
     setMuted: muted.setMuted,
+    notificationLevel: notificationLevels.level,
+    setNotificationLevel: notificationLevels.setLevel,
     sections: sections.shown,
     sectionsKeptByTermslack: sections.keptByTermslack,
     sectionsNote: sections.note,
@@ -1451,6 +1490,7 @@ export function createWorkspaceSession(
     async start() {
       stopped = false;
       await muted.load();
+      await notificationLevels.load();
       await sections.load();
       currentUserId = fetchIdentity(client())
         .then(({ userId, scopes: granted }) => {
@@ -1532,6 +1572,7 @@ export function createWorkspaceSession(
       socket = undefined;
       await dms.flush();
       await muted.flush();
+      await notificationLevels.flush();
       await sections.flush();
     },
   };

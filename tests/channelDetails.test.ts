@@ -373,6 +373,6 @@ test("opened from a right-click menu it works the same", async () => {
 
   const menu = findPopup(app.screen(), "#secret")!;
 
-  await app.click(menu.left + 3, menu.top + 2);
+  await app.click(menu.left + 3, menu.top + 3);
   await app.waitForScreen("#secret details");
 });

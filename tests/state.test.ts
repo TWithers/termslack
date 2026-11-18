@@ -9,6 +9,7 @@ import {
   workspaceDmActivityCache,
   workspaceHideMutedMemory,
   workspaceMuteMemory,
+  workspaceNotificationLevelMemory,
 } from "../src/config/state";
 
 beforeEach(() => rm(stateFile, { force: true }));
@@ -173,4 +174,34 @@ test("hide-muted memory recalls the choice, and forgets it when muted channels s
   expect(await loadWorkspaceState("T1")).not.toHaveProperty(
     "hideMutedChannels",
   );
+});
+
+test("notification level memory recalls the levels set, and forgets channels back on mentions only", async () => {
+  const first = workspaceNotificationLevelMemory("T1", { debounceMs: 5 });
+
+  expect(await first.recall()).toEqual({});
+
+  first.remember({ C1: "all", C2: "off" });
+  await first.flush();
+
+  expect(await workspaceNotificationLevelMemory("T1").recall()).toEqual({
+    C1: "all",
+    C2: "off",
+  });
+  expect(await workspaceNotificationLevelMemory("T2").recall()).toEqual({});
+
+  first.remember({});
+  await first.flush();
+
+  expect(await loadWorkspaceState("T1")).toEqual({});
+});
+
+test("notification level memory ignores levels it doesn't know", async () => {
+  await updateWorkspaceState("T1", {
+    channelNotifications: { C1: "all", C2: "loud", C3: 7 } as never,
+  });
+
+  expect(await workspaceNotificationLevelMemory("T1").recall()).toEqual({
+    C1: "all",
+  });
 });

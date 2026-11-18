@@ -39,6 +39,7 @@ export function useChannelDetails({
         session,
         shown.section,
         session.isMuted(shown.channel.id),
+        session.notificationLevel(shown.channel.id),
       )
     : [];
   const view = useListView({

@@ -1,4 +1,5 @@
 import type { ChannelDetails as Details } from "../../slack/convert";
+import type { NotificationLevel } from "../../session/notificationLevels";
 import { renderMessageText } from "../../session/messageText";
 import { personName } from "../../session/people";
 import type { WorkspaceSession } from "../../session/workspaceSession";
@@ -61,11 +62,18 @@ function createdText(
   return text === "" ? undefined : [{ text }];
 }
 
+const notificationLevelText: Record<NotificationLevel, string> = {
+  mentions: "Mentions only",
+  all: "All messages",
+  off: "Off",
+};
+
 /**
  * The popup's lines for a list `width` columns wide: one item per screen
  * line, so it scrolls and counts in lines. Each field is its label then its
  * value, which wraps under itself, aligned with the value column. `section`
- * is the name of the sidebar section the channel is in, if known; `muted` whether it is muted in termslack.
+ * is the name of the sidebar section the channel is in, if known; `muted`
+ * whether it is muted in termslack, and `notificationLevel` what it notifies for.
  */
 export function channelDetailsItems(
   content: ChannelDetailsContent,
@@ -73,6 +81,7 @@ export function channelDetailsItems(
   session: Lookup,
   section: string | undefined,
   muted: boolean,
+  notificationLevel: NotificationLevel,
 ): OverlayItem[] {
   function lines(
     id: string,
@@ -132,5 +141,8 @@ export function channelDetailsItems(
       ? []
       : lines("section", "Section", [{ text: section }])),
     ...lines("muted", "Muted", [{ text: muted ? "yes" : "no" }]),
+    ...lines("notify", "Notify", [
+      { text: notificationLevelText[notificationLevel] },
+    ]),
   ];
 }

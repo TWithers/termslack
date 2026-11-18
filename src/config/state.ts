@@ -27,6 +27,8 @@ export type WorkspaceState = {
   collapsedSections?: string[];
   /** The channels the user muted in termslack, by channel ID (Slack doesn't know). */
   mutedChannels?: string[];
+  /** What each channel notifies for, by channel ID, when it isn't mentions only (termslack's own; Slack doesn't share it). */
+  channelNotifications?: ChannelNotificationLevels;
   /** Whether the sidebar hides muted channels (`M`); absent means they show. */
   hideMutedChannels?: boolean;
   /** The sidebar sections termslack keeps (channels by ID), in order. Once present, `config.toml`'s `sections` are ignored; an empty list is a kept, empty set. */
@@ -341,6 +343,53 @@ export function workspaceMuteMemory(
       return Array.isArray(stored)
         ? stored.filter((id): id is string => typeof id === "string")
         : [];
+    },
+    remember: writer.set,
+    flush: writer.flush,
+  };
+}
+
+/** The channels that don't notify for mentions only, by channel ID. */
+export type ChannelNotificationLevels = Record<string, "all" | "off">;
+
+/** Remembers what each channel notifies for. */
+export type NotificationLevelMemory = {
+  /** The levels an earlier run saved (channels on mentions only are left out). Never rejects. */
+  recall(): Promise<ChannelNotificationLevels>;
+  /** Records the levels. Writes are debounced; the last state wins. */
+  remember(levels: ChannelNotificationLevels): void;
+  /** Writes anything still waiting; resolves when it's on disk. */
+  flush(): Promise<void>;
+};
+
+/** A workspace's `NotificationLevelMemory`, kept in the state file. */
+export function workspaceNotificationLevelMemory(
+  teamId: string,
+  options: { debounceMs?: number } = {},
+): NotificationLevelMemory {
+  const writer = debouncedWorkspaceWriter<ChannelNotificationLevels>(
+    teamId,
+    options,
+    (levels) => ({
+      channelNotifications: Object.keys(levels).length > 0 ? levels : undefined,
+    }),
+  );
+
+  return {
+    async recall() {
+      const state = await loadWorkspaceState(teamId).catch(() => undefined);
+      const stored: unknown = state?.channelNotifications;
+
+      if (typeof stored !== "object" || stored === null) {
+        return {};
+      }
+
+      return Object.fromEntries(
+        Object.entries(stored).filter(
+          (entry): entry is [string, "all" | "off"] =>
+            entry[1] === "all" || entry[1] === "off",
+        ),
+      );
     },
     remember: writer.set,
     flush: writer.flush,

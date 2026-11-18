@@ -1,3 +1,4 @@
+import type { NotificationLevel } from "../../session/notificationLevels";
 import type { ChannelRef } from "./useConfirmPrompt";
 
 /**
@@ -22,6 +23,8 @@ export type ChannelMenuActions = {
   leave(channel: ChannelRef): void;
   isMuted(channel: ChannelRef): boolean;
   setMuted(channel: ChannelRef, muted: boolean): void;
+  notificationLevel(channel: ChannelRef): NotificationLevel;
+  setNotificationLevel(channel: ChannelRef, level: NotificationLevel): void;
   /** The user's section names in order, and the one the channel is in (none: it is under Channels). */
   sections(channel: ChannelRef): { names: string[]; current?: string };
   moveToSection(channel: ChannelRef, sectionName: string): void;
@@ -68,6 +71,34 @@ function sectionList(
   };
 }
 
+const notificationLevelChoices: {
+  level: NotificationLevel;
+  letter: string;
+  label: string;
+}[] = [
+  { level: "mentions", letter: "m", label: "Mentions only" },
+  { level: "all", letter: "a", label: "All messages" },
+  { level: "off", letter: "o", label: "Off" },
+];
+
+/** The second list of Notifications: each level, the channel's own marked with a check. */
+function notificationList(
+  channel: ChannelRef,
+  actions: ChannelMenuActions,
+): MenuList {
+  const current = actions.notificationLevel(channel);
+
+  return {
+    title: "Notifications",
+    choices: notificationLevelChoices.map(({ level, letter, label }) => ({
+      id: `notify:${level}`,
+      letter,
+      label: `${level === current ? "✓" : " "} ${label}`,
+      run: () => actions.setNotificationLevel(channel, level),
+    })),
+  };
+}
+
 /**
  * The channel menu's choices for `channel`, in the order shown. Adding an
  * item is adding an entry here (conditionally, for one that depends on the
@@ -85,6 +116,12 @@ export function channelMenuChoices(
       letter: "m",
       label: muted ? "Unmute channel" : "Mute channel",
       run: () => actions.setMuted(channel, !muted),
+    },
+    {
+      id: "notifications",
+      letter: "n",
+      label: "Notifications…",
+      run: () => notificationList(channel, actions),
     },
     {
       id: "details",

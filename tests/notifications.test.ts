@@ -640,7 +640,7 @@ test("the fixtures' dnd.info and dnd_updated shapes are understood", async () =>
 
 const interval = 60_000;
 
-test("after a notification, mentions and DMs within the minute are held and go out as one when it is up", async () => {
+test("after a notification, mentions and DMs within the interval are held and go out as one when it is up", async () => {
   await start({ intervalMs: interval });
 
   await say(directMessage, { text: "first" }, "im");
@@ -668,7 +668,7 @@ test("after a notification, mentions and DMs within the minute are held and go o
   expect(notified()[1]!.newest.text).toContain("four");
 });
 
-test("the minute counts from when the last notification went out", async () => {
+test("the interval counts from when the last notification went out", async () => {
   await start({ intervalMs: interval });
 
   await say(directMessage, {}, "im");
@@ -680,7 +680,7 @@ test("the minute counts from when the last notification went out", async () => {
   expect(notified()).toHaveLength(2);
 });
 
-test("after a quiet minute the next message notifies straight away", async () => {
+test("after a quiet interval the next message notifies straight away", async () => {
   await start({ intervalMs: interval });
 
   await say(directMessage, {}, "im");
@@ -744,11 +744,11 @@ test("Do Not Disturb that starts by schedule while messages are held drops them"
   expect(notified()).toHaveLength(1);
 });
 
-test("the interval is a minute unless a session is told otherwise", () => {
-  expect(notificationIntervalMs).toBe(60_000);
+test("the interval is five seconds unless a session is told otherwise", () => {
+  expect(notificationIntervalMs).toBe(5000);
 });
 
-test("a batch dropped by Do Not Disturb at delivery doesn't start the minute", async () => {
+test("a batch dropped by Do Not Disturb at delivery doesn't start the interval", async () => {
   await start({
     intervalMs: interval,
     dnd: {
