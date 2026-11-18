@@ -95,10 +95,10 @@ export function bellEnabled(configured: unknown): boolean {
 
 /**
  * Whether desktop notifications show for what rings the bell (the top-level
- * `desktopNotifications` in `config.toml`). Off unless it is exactly `true`.
+ * `desktopNotifications` in `config.toml`). On unless it is exactly `false`.
  */
 export function desktopNotificationsEnabled(configured: unknown): boolean {
-  return configured === true;
+  return configured !== false;
 }
 
 /**

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { rm } from "node:fs/promises";
 import {
   bellEnabled,
+  desktopNotificationsEnabled,
   kittyKeyboardEnabled,
   loadConfig,
   parseSections,
@@ -94,5 +95,21 @@ test("bell is a top-level setting that is on unless it is exactly false", async 
 
   for (const configured of ["false", 0, null, undefined, true]) {
     expect(bellEnabled(configured)).toBe(true);
+  }
+});
+
+test("desktopNotifications is a top-level setting that is on unless it is exactly false", async () => {
+  expect(
+    desktopNotificationsEnabled((await loadConfig()).desktopNotifications),
+  ).toBe(true);
+
+  await Bun.write(configFile, "desktopNotifications = false\n");
+
+  expect(
+    desktopNotificationsEnabled((await loadConfig()).desktopNotifications),
+  ).toBe(false);
+
+  for (const configured of ["false", 0, null, undefined, true]) {
+    expect(desktopNotificationsEnabled(configured)).toBe(true);
   }
 });

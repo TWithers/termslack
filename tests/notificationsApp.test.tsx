@@ -8,10 +8,6 @@ import {
   startSessionHarness,
 } from "./support/sessionHarness";
 import { runApp } from "../src/ui/app/run";
-import {
-  createDesktopNotifier,
-  type DesktopNotifier,
-} from "../src/ui/app/desktopNotifications";
 
 let harness: SessionHarness;
 
@@ -34,14 +30,15 @@ async function startRunning({
   windowMs = 20,
   intervalMs,
   desktop,
-  notifier,
+  env = {},
   history,
 }: {
   bell?: boolean;
   windowMs?: number;
   intervalMs?: number;
   desktop?: boolean;
-  notifier?: DesktopNotifier;
+  /** The terminal's environment: its TERM_PROGRAM decides the notification code. */
+  env?: Record<string, string | undefined>;
   /** Messages #general's history holds. */
   history?: Record<string, unknown>[];
 } = {}) {
@@ -75,7 +72,7 @@ async function startRunning({
       signals,
       bell,
       desktopNotifications: desktop,
-      desktopNotifier: notifier,
+      env,
       ringBell: () => bells.push(Date.now()),
       stdout: terminal.stdout,
       stdin: terminal.stdin as unknown as NodeJS.ReadStream,
@@ -285,78 +282,146 @@ test("when dnd.info fails the status line says so", async () => {
   }
 });
 
-function fakeNotifier() {
-  const shown: { title: string; body: string }[] = [];
-  const notifier: DesktopNotifier = {
-    show: (title, body) => void shown.push({ title, body }),
-  };
+const ghostty = { TERM_PROGRAM: "ghostty" };
+const oscStart = "\x1b]777;notify;";
 
-  return { shown, notifier };
+function notificationsWritten(terminal: { written(): string }) {
+  return [
+    ...terminal
+      .written()
+      .matchAll(/\x1b\]777;notify;([^;\x07]*);([^\x07]*)\x07/g),
+  ].map((match) => ({ title: match[1]!, body: match[2]! }));
 }
 
 test("desktop notifications are off unless asked for", async () => {
-  const { shown, notifier } = fakeNotifier();
-  const { signals, finished, bells } = await startRunning({ notifier });
+  const { terminal, signals, finished, bells } = await startRunning({
+    env: ghostty,
+  });
 
   await say(random, `<@${me}> plain`);
   await waitFor(() => bells.length === 1);
 
-  expect(shown).toEqual([]);
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(terminal.written()).not.toContain("aren't supported");
 
   signals.emit("SIGTERM");
   await finished;
 });
 
-test("a notifying message shows conversation, author and plain text", async () => {
-  const { shown, notifier } = fakeNotifier();
-  const { signals, finished, bells } = await startRunning({
+test("turned off, an unknown terminal gets no notice either", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: false,
+    env: { TERM_PROGRAM: "Apple_Terminal" },
+  });
+
+  await Bun.sleep(50);
+
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("under Ghostty a notifying message writes one OSC 777 notification with conversation, author and plain text", async () => {
+  const { terminal, signals, finished, bells } = await startRunning({
     desktop: true,
-    notifier,
+    env: ghostty,
   });
 
   await say(random, `*bold* hey <@${me}> -- "quoted"\nsecond line`);
-  await waitFor(() => shown.length === 1);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  const [shown] = notificationsWritten(terminal);
 
   expect(bells).toHaveLength(1);
-  expect(shown[0]!.title).toStartWith("#random · ");
-  expect(shown[0]!.title).not.toContain("U222222222");
-  expect(shown[0]!.body).toMatch(/^bold hey @\S+ -- "quoted" second line$/);
-  expect(shown[0]!.body).not.toContain("*");
+  expect(shown!.title).toStartWith("#random · ");
+  expect(shown!.title).not.toContain("U222222222");
+  expect(shown!.body).toMatch(/^bold hey @\S+ -- "quoted" second line$/);
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a direct message is titled by the person who wrote", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+  });
+
+  await harness.sendEvents({
+    event: {
+      type: "message",
+      channel: "D012AB3CD",
+      channel_type: "im",
+      user: other,
+      text: "hi there",
+      ts: "1700000100.000001",
+    },
+  });
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  expect(notificationsWritten(terminal)[0]!.body).toBe("hi there");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("control characters are removed from the notification and a semicolon in the title becomes a comma", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+  });
+
+  await say(random, `<@${me}> a\x1b]0;evil\x07b\x9bc\x7fd; e\x00f`);
+  await waitFor(() => terminal.written().includes(oscStart));
+
+  const written = terminal.written();
+  const start = written.indexOf(oscStart);
+  const end = written.indexOf("\x07", start);
+  const sequence = written.slice(start, end + 1);
+
+  expect(sequence).toMatch(
+    /^\x1b\]777;notify;[^;\x00-\x1f\x7f-\x9f]*;[^\x00-\x1a\x1c-\x1f\x7f-\x9f]*\x07$/,
+  );
+  expect(sequence).toContain("a]0;evilbcd; ef");
 
   signals.emit("SIGTERM");
   await finished;
 });
 
 test("a long message is cut", async () => {
-  const { shown, notifier } = fakeNotifier();
-  const { signals, finished } = await startRunning({
+  const { terminal, signals, finished } = await startRunning({
     desktop: true,
-    notifier,
+    env: ghostty,
   });
 
   await say(random, `<@${me}> ${"word ".repeat(200)}`);
-  await waitFor(() => shown.length === 1);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
 
-  expect([...shown[0]!.body].length).toBeLessThanOrEqual(200);
-  expect(shown[0]!.body).toEndWith("…");
+  const [shown] = notificationsWritten(terminal);
+
+  expect([...shown!.body].length).toBeLessThanOrEqual(200);
+  expect(shown!.body).toEndWith("…");
 
   signals.emit("SIGTERM");
   await finished;
 });
 
-test("a burst shows one summary with the newest text", async () => {
-  const { shown, notifier } = fakeNotifier();
-  const { signals, finished } = await startRunning({
+test("a burst writes one summary with the newest text", async () => {
+  const { terminal, signals, finished } = await startRunning({
     desktop: true,
-    notifier,
+    env: ghostty,
     windowMs: 300,
   });
 
   await say(random, `<@${me}> one`);
   await say(random, `<@${me}> two`);
   await say(random, `<@${me}> three`);
-  await waitFor(() => shown.length > 0);
+  await waitFor(() => notificationsWritten(terminal).length > 0);
   await Bun.sleep(400);
+
+  const shown = notificationsWritten(terminal);
 
   expect(shown).toHaveLength(1);
   expect(shown[0]!.title).toBe("3 new messages in #random");
@@ -366,11 +431,10 @@ test("a burst shows one summary with the newest text", async () => {
   await finished;
 });
 
-test("suppressed messages show nothing", async () => {
-  const { shown, notifier } = fakeNotifier();
+test("suppressed messages write nothing", async () => {
   const { terminal, signals, finished } = await startRunning({
     desktop: true,
-    notifier,
+    env: ghostty,
   });
 
   terminal.stdin.write(focusIn);
@@ -378,34 +442,41 @@ test("suppressed messages show nothing", async () => {
   await say(general);
   await Bun.sleep(100);
 
-  expect(shown).toEqual([]);
+  expect(terminal.written()).not.toContain(oscStart);
 
   signals.emit("SIGTERM");
   await finished;
 });
 
-test("without the notification tool the status line says so once and the bell carries on", async () => {
+test("in a terminal with no known code the status line says so once and the bell carries on", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
     desktop: true,
-    notifier: createDesktopNotifier({ platform: "linux", which: () => null }),
+    env: { TERM_PROGRAM: "Apple_Terminal" },
   });
 
-  await waitFor(() => terminal.written().includes("notify-send"));
+  await waitFor(() => terminal.written().includes("aren't supported"));
   await say(random);
   await waitFor(() => bells.length === 1);
+
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(
+    terminal.written().split("desktop notifications aren't supported").length,
+  ).toBeLessThanOrEqual(2);
 
   signals.emit("SIGTERM");
   await finished;
 });
 
 test("after quitting, desktop notifications stop", async () => {
-  const { shown, notifier } = fakeNotifier();
-  const { signals, finished } = await startRunning({ desktop: true, notifier });
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+  });
 
   signals.emit("SIGTERM");
   await finished;
   await say(random).catch(() => undefined);
   await Bun.sleep(60);
 
-  expect(shown).toEqual([]);
+  expect(terminal.written()).not.toContain(oscStart);
 });

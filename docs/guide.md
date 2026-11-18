@@ -99,15 +99,17 @@ The choice applies at once and follows the same rules as mentions: nothing while
 
 ### Desktop notifications
 
-Optionally, whatever rings the bell also shows a desktop notification, so you see who wrote what from another window. It is off by default; turn it on with a top-level setting in `~/.config/termslack/config.toml`:
+Whatever rings the bell also shows a desktop notification through your terminal, so you see who wrote what from another window. It is on by default; `false` turns it off, with a top-level setting in `~/.config/termslack/config.toml`:
 
 ```toml
-desktopNotifications = true
+desktopNotifications = false
 ```
 
 It is the same message as the bell, so the same rules apply (Do Not Disturb, the terminal being focused, several messages within about a second making one, at most one every 5 seconds). The title is the conversation and the author (`#random · Ana`; just the person for a DM), the body is the message as plain text, cut to 200 characters. A burst shows one notification, "3 new messages in #random" (or just "3 new messages" across conversations), with the newest message's text.
 
-On macOS termslack runs `osascript`, on Linux `notify-send`; the text is passed as separate arguments, never built into a script or shell string, so quotes, backslashes and newlines can't break it. On other platforms, or if the tool isn't installed, the status line says so once and the bell carries on alone. A notification command that fails is noted once; one that hangs is killed after 5 seconds. Neither blocks termslack.
+Termslack sends the notification as an escape code, so it comes from the terminal itself, not from another program. For now that works in Ghostty (recognised by `TERM_PROGRAM=ghostty`). Any other terminal gets the bell only, and the status line says once that desktop notifications aren't supported by this terminal. Nothing is sent when output isn't a terminal.
+
+If you see none in Ghostty, check macOS: Ghostty must be allowed in System Settings → Notifications, with the style set to Banners or Alerts, and no Focus mode (such as Do Not Disturb) hiding them. Ghostty's own `desktop-notifications` setting is on by default.
 
 ## Presence
 

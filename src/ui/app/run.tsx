@@ -1,9 +1,9 @@
 import { render, type RenderOptions } from "ink";
 import { App, type AppProps } from "./App";
 import {
+  chooseNotifierKind,
   createDesktopNotifier,
-  describeNotification,
-  type DesktopNotifier,
+  noDesktopNotificationsNotice,
 } from "./desktopNotifications";
 import {
   createMouseSource,
@@ -48,8 +48,8 @@ export type RunOptions = Pick<RenderOptions, "stdout" | "stdin"> & {
   ringBell?: () => void;
   /** Whether what rings the bell also shows a desktop notification (the config's `desktopNotifications`). Default false. */
   desktopNotifications?: boolean;
-  /** Shows desktop notifications. Default: the platform's own tool (`osascript`, `notify-send`). */
-  desktopNotifier?: DesktopNotifier;
+  /** The terminal's environment, where `TERM_PROGRAM` names it. Default: `process.env`. */
+  env?: Record<string, string | undefined>;
 };
 
 const quitSignals = ["SIGINT", "SIGTERM"] as const;
@@ -70,7 +70,7 @@ export async function runApp(
     bell = true,
     ringBell: ring,
     desktopNotifications = false,
-    desktopNotifier,
+    env = process.env,
     ...streams
   }: RunOptions = {},
 ): Promise<void> {
@@ -96,12 +96,18 @@ export async function runApp(
     );
   }
 
-  const notifier = desktopNotifications
-    ? (desktopNotifier ?? createDesktopNotifier({ onFailure: notice.set }))
+  const desktopWanted =
+    desktopNotifications && (stdout as { isTTY?: boolean }).isTTY === true;
+  const notifier = desktopWanted
+    ? createDesktopNotifier(
+        chooseNotifierKind({ termProgram: env.TERM_PROGRAM }),
+        props.session,
+        (bytes) => void stdout.write(bytes),
+      )
     : undefined;
 
-  if (notifier?.unavailable) {
-    notice.set(notifier.unavailable);
+  if (desktopWanted && !notifier) {
+    notice.set(noDesktopNotificationsNotice);
   }
 
   const instance = render(<App {...props} notice={notice} mouse={mouse} />, {
@@ -121,17 +127,9 @@ export async function runApp(
   const stopListeningForBells = bell
     ? props.session.subscribeToNotifications(ringTheBell)
     : undefined;
-  const stopListeningForDesktop =
-    notifier && !notifier.unavailable
-      ? props.session.subscribeToNotifications((notification) => {
-          const { title, body } = describeNotification(
-            props.session,
-            notification,
-          );
-
-          notifier.show(title, body);
-        })
-      : undefined;
+  const stopListeningForDesktop = notifier
+    ? props.session.subscribeToNotifications(notifier.show)
+    : undefined;
 
   stdout.write(
     saveTitle +

@@ -10,126 +10,67 @@ import {
 } from "../../session/people";
 import type { WorkspaceSession } from "../../session/workspaceSession";
 
-/** Shows a desktop notification. Never throws and never waits for the desktop. */
+/** What the app learned about the terminal it runs in. */
+export type TerminalIdentity = {
+  /** The name the terminal gives when asked for its version (XTVERSION). */
+  name?: string;
+  /** The `TERM_PROGRAM` environment variable. */
+  termProgram?: string;
+  /** What the terminal listed when asked about OSC 99, by key. */
+  osc99?: Record<string, string[]>;
+};
+
+/** The escape code a terminal shows notifications through, or none. */
+export type NotifierKind = "osc777" | "none";
+
+/** Shows a desktop notification by writing an escape code to the terminal. */
 export type DesktopNotifier = {
-  show(title: string, body: string): void;
-  /** Why notifications can't be shown here (an unsupported platform, a missing tool); the app says so once. */
-  unavailable?: string;
+  show(notification: Notification): void;
 };
 
-/** A started notification command, as much as the notifier needs of a process. */
-export type NotifierProcess = {
-  exited: Promise<number>;
-  kill(): void;
-};
-
-export const notificationTimeoutMs = 5000;
 export const maxBodyLength = 200;
 
-/**
- * The command that shows a notification, or undefined on a platform with no
- * known tool. Title and body are separate arguments (after `--`, so text
- * starting with `-` isn't read as an option), never part of a script or a
- * shell string.
- */
-export function notificationCommand(
-  platform: string,
-  title: string,
-  body: string,
-): string[] | undefined {
-  if (platform === "darwin") {
-    return [
-      "osascript",
-      "-e",
-      "on run argv",
-      "-e",
-      "display notification (item 2 of argv) with title (item 1 of argv)",
-      "-e",
-      "end run",
-      "--",
-      title,
-      body,
-    ];
+export const noDesktopNotificationsNotice =
+  "desktop notifications aren't supported by this terminal: the bell only";
+
+/** Picks how to show notifications in a terminal: the first rule that matches its identity. */
+export function chooseNotifierKind({
+  name,
+  termProgram,
+}: TerminalIdentity): NotifierKind {
+  if (name?.startsWith("ghostty") || termProgram === "ghostty") {
+    return "osc777";
   }
 
-  if (platform === "linux") {
-    return ["notify-send", "--", title, body];
-  }
+  return "none";
+}
 
-  return undefined;
+/** The text with C0 and C1 control characters removed, so it can't end or inject an escape code. */
+export function withoutControlCharacters(text: string): string {
+  return text.replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
 }
 
 /**
- * A notifier that runs the platform's tool. It starts the command and moves
- * on; a command still running after `timeoutMs` is killed, and one that
- * fails or can't start is reported once through `onFailure` and otherwise
- * ignored. `which` finds the tool up front: without it the notifier is
- * `unavailable`.
+ * The notifier for a kind, or undefined for `none`. Title and body are
+ * worded by `describeNotification`; `write` sends the bytes to the terminal.
  */
-export function createDesktopNotifier({
-  platform = process.platform,
-  which = Bun.which,
-  spawn = (command) =>
-    Bun.spawn(command, { stdin: "ignore", stdout: "ignore", stderr: "ignore" }),
-  timeoutMs = notificationTimeoutMs,
-  onFailure = () => {},
-}: {
-  platform?: string;
-  which?: (tool: string) => string | null;
-  spawn?: (command: string[]) => NotifierProcess;
-  timeoutMs?: number;
-  onFailure?: (note: string) => void;
-} = {}): DesktopNotifier {
-  const probe = notificationCommand(platform, "", "");
-
-  if (!probe) {
-    return {
-      show: () => {},
-      unavailable: `desktop notifications aren't supported on ${platform}: the bell only`,
-    };
+export function createDesktopNotifier(
+  kind: NotifierKind,
+  session: WorkspaceSession,
+  write: (bytes: string) => void,
+): DesktopNotifier | undefined {
+  if (kind === "none") {
+    return undefined;
   }
-
-  if (!which(probe[0]!)) {
-    return {
-      show: () => {},
-      unavailable: `desktop notifications need ${probe[0]}, which wasn't found: the bell only`,
-    };
-  }
-
-  let reported = false;
-  const fail = (reason: string) => {
-    if (reported) {
-      return;
-    }
-
-    reported = true;
-    onFailure(`desktop notification failed (${reason}); the bell still rings`);
-  };
 
   return {
-    show(title, body) {
-      const command = notificationCommand(platform, title, body)!;
+    show(notification) {
+      const { title, body } = describeNotification(session, notification);
+      const cleanTitle = withoutControlCharacters(title).replaceAll(";", ",");
 
-      try {
-        const child = spawn(command);
-        const timer = setTimeout(() => {
-          fail("timed out");
-          child.kill();
-        }, timeoutMs);
-
-        child.exited.then(
-          (code) => {
-            clearTimeout(timer);
-
-            if (code !== 0) {
-              fail(`${command[0]} exited with ${code}`);
-            }
-          },
-          () => clearTimeout(timer),
-        );
-      } catch (error) {
-        fail(error instanceof Error ? error.message : String(error));
-      }
+      write(
+        `\x1b]777;notify;${cleanTitle};${withoutControlCharacters(body)}\x07`,
+      );
     },
   };
 }

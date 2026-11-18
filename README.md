@@ -57,7 +57,7 @@ Optional. Top-level settings go at the top of `~/.config/termslack/config.toml`,
 ```toml
 theme = "nord"                # default: slack-dark
 bell = true                   # ring the terminal bell for mentions and DMs
-desktopNotifications = false  # also show a desktop notification
+desktopNotifications = true   # also show a desktop notification (on by default)
 kittyKeyboard = false         # lets Shift+Enter insert a newline
 
 [workspaces.T0123ABCD]
