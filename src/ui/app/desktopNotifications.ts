@@ -37,6 +37,8 @@ export type DesktopNotifier = {
   show(notification: Notification): void;
   /** Where a click on the notification with this OSC 99 identifier leads, if it was shown in this run. */
   activate(identifier: string): ActivationTarget | undefined;
+  /** Closes the conversation's notification, if this notifier can and it is still showing. */
+  dismiss(conversationId: string): void;
 };
 
 export const maxBodyLength = 200;
@@ -96,6 +98,19 @@ export function createDesktopNotifier(
   return {
     activate(identifier) {
       return shown.get(identifier);
+    },
+    dismiss(conversationId) {
+      const identifier = osc99Identifier(conversationId);
+
+      if (kind.code !== "osc99" || !kind.clickable) {
+        return;
+      }
+
+      if (!shown.delete(identifier)) {
+        return;
+      }
+
+      write(`\x1b]99;i=${identifier}:p=close;\x1b\\`);
     },
     show(notification) {
       const { title, body } = describeNotification(session, notification);

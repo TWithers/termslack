@@ -13,13 +13,20 @@ export type ActivationTarget = {
 export type NotificationActions = {
   onActivate(listener: (target: ActivationTarget) => void): () => void;
   dismiss(conversationId: string): void;
+  /** Hears of the terminal window coming back into focus. */
+  onWindowFocus(listener: () => void): () => void;
 };
 
 /** Actions that exist from the start; the notifier chosen later feeds them through `activate`. */
 export function createNotificationActions(): NotificationActions & {
   activate(target: ActivationTarget): void;
+  /** Where `dismiss` goes once a notifier is chosen. */
+  useDismisser(dismiss: (conversationId: string) => void): void;
+  windowFocused(): void;
 } {
   const listeners = new Set<(target: ActivationTarget) => void>();
+  const focusListeners = new Set<() => void>();
+  let dismisser: (conversationId: string) => void = () => {};
 
   return {
     onActivate(listener) {
@@ -27,7 +34,18 @@ export function createNotificationActions(): NotificationActions & {
 
       return () => void listeners.delete(listener);
     },
-    dismiss() {},
+    dismiss: (conversationId) => dismisser(conversationId),
+    useDismisser(dismiss) {
+      dismisser = dismiss;
+    },
+    onWindowFocus(listener) {
+      focusListeners.add(listener);
+
+      return () => void focusListeners.delete(listener);
+    },
+    windowFocused() {
+      focusListeners.forEach((listener) => listener());
+    },
     activate(target) {
       listeners.forEach((listener) => listener(target));
     },

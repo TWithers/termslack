@@ -416,6 +416,7 @@ export function App({
 
     setOpenId(id);
     session.setOpenConversation(id);
+    notificationActions?.dismiss(id);
     messages.reset();
     actions.discardEdit();
     reactionPrompt.close();
@@ -776,6 +777,20 @@ export function App({
     requestFocus("messages");
     setPendingActivation(target);
   };
+
+  const openIdRef = useRef(openId);
+
+  openIdRef.current = openId;
+
+  useEffect(
+    () =>
+      notificationActions?.onWindowFocus(() => {
+        if (openIdRef.current !== undefined) {
+          notificationActions.dismiss(openIdRef.current);
+        }
+      }),
+    [notificationActions],
+  );
 
   useEffect(
     () =>

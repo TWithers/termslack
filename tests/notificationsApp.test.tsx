@@ -1213,3 +1213,110 @@ test("click reports never reach the input box, whole or split", async () => {
   signals.emit("SIGTERM");
   await finished;
 });
+
+function closesWritten(terminal: { written(): string }): string[] {
+  return [
+    ...terminal.written().matchAll(/\x1b\]99;i=([^:;\x1b]*):p=close;\x1b\\/g),
+  ].map((match) => match[1]!);
+}
+
+test("opening a conversation with a shown notification closes it once", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> close-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(closesWritten(terminal)).toEqual([]);
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => closesWritten(terminal).length === 1);
+
+  expect(closesWritten(terminal)).toEqual(["termslack-C061EG9T2"]);
+
+  terminal.stdin.write(clickReport(random));
+  await Bun.sleep(150);
+
+  expect(closesWritten(terminal)).toHaveLength(1);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("opening a conversation that was never notified writes no close", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> elsewhere-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  terminal.stdin.write("\x1b[B\r");
+  await Bun.sleep(150);
+
+  expect(closesWritten(terminal)).not.toContain("termslack-C012AB3CD");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("regaining terminal window focus closes the open conversation's notification", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  terminal.stdin.write(focusOut);
+  await Bun.sleep(30);
+  await say(general, `<@${me}> away-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(closesWritten(terminal)).toEqual([]);
+
+  terminal.stdin.write(focusIn);
+  await waitFor(() => closesWritten(terminal).length === 1);
+
+  expect(closesWritten(terminal)).toEqual(["termslack-C012AB3CD"]);
+
+  terminal.stdin.write(focusOut);
+  await Bun.sleep(30);
+  await say(general, `<@${me}> away-again`);
+  await waitFor(() => osc99Written(terminal).length === 4);
+  terminal.stdin.write(focusIn);
+  await waitFor(() => closesWritten(terminal).length === 2);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a notification for another conversation stays when focus returns", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  terminal.stdin.write(focusOut);
+  await Bun.sleep(30);
+  await say(random, `<@${me}> other-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+  terminal.stdin.write(focusIn);
+  await Bun.sleep(150);
+
+  expect(closesWritten(terminal)).toEqual([]);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("terminals without clickable notifications never get a close", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+    intervalMs: 10,
+  });
+
+  terminal.stdin.write(kittyAnswer + da1);
+  await Bun.sleep(30);
+  terminal.stdin.write(focusOut);
+  await Bun.sleep(30);
+  await say(general, `<@${me}> plain-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+  terminal.stdin.write(focusIn);
+  await Bun.sleep(150);
+
+  expect(terminal.written()).not.toContain("p=close");
+
+  signals.emit("SIGTERM");
+  await finished;
+});

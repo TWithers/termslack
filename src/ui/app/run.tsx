@@ -89,6 +89,10 @@ export async function runApp(
     (focused) => {
       props.session.setTerminalFocused(focused);
 
+      if (focused) {
+        notificationActions.windowFocused();
+      }
+
       if (!focused) {
         mouse.blur();
       }
@@ -128,6 +132,10 @@ export async function runApp(
         props.session,
         (bytes) => void stdout.write(bytes),
       );
+
+      if (notifier) {
+        notificationActions.useDismisser(notifier.dismiss);
+      }
 
       if (!notifier) {
         notice.set(noDesktopNotificationsNotice);
