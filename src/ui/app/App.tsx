@@ -773,8 +773,10 @@ export function App({
   const activateRef = useRef((_target: ActivationTarget) => {});
 
   activateRef.current = (target) => {
-    openConversation(target.conversationId, { remember: true });
-    requestFocus("messages");
+    actions.cancelPrompt();
+    popups.cancelPrompt();
+    popups.dismiss();
+    openFromSwitcher(target.conversationId);
     setPendingActivation(target);
   };
 

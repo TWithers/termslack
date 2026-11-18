@@ -1361,3 +1361,76 @@ test("a terminal without clickable notifications gets no close on quitting", asy
 
   expect(terminal.written()).not.toContain("p=close");
 });
+
+const myMessage = [
+  {
+    type: "message",
+    user: me,
+    text: "my-own-words",
+    ts: "1700000050.000001",
+  },
+];
+
+function deletes() {
+  return harness.slack.calls.filter((call) => call.method === "chat.delete");
+}
+
+test("a click report cancels a pending delete question, so y deletes nothing in the old conversation", async () => {
+  const running = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+    intervalMs: 10,
+    history: myMessage,
+  });
+  const { terminal, signals, finished } = running;
+
+  terminal.stdin.write(kittyReportAnswer + da1);
+  await Bun.sleep(30);
+  await say(random, `<@${me}> question-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  terminal.stdin.write("\t");
+  await Bun.sleep(50);
+  terminal.stdin.write("d");
+  await waitFor(() => drawnSince(terminal, 0).includes("Delete this message?"));
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => drawnSince(terminal, before).includes("─ #random ─"));
+
+  const after = terminal.written().length;
+
+  terminal.stdin.write("y");
+  await Bun.sleep(150);
+
+  expect(deletes()).toHaveLength(0);
+  expect(drawnSince(terminal, after)).not.toContain("Delete this message?");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a click report closes an open popup and opens the conversation", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> popup-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  terminal.stdin.write("?");
+  await waitFor(() => drawnSince(terminal, 0).includes("Everywhere"));
+  await Bun.sleep(50);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => drawnSince(terminal, before).includes("─ #random ─"));
+
+  const after = terminal.written().length;
+
+  terminal.stdin.write("?");
+  await waitFor(() => drawnSince(terminal, after).includes("Everywhere"));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
