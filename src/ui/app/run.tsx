@@ -111,6 +111,7 @@ export async function runApp(
         notificationActions.activate(target);
       }
     },
+    () => probe?.running === true,
   );
   const notice = createNotice();
 

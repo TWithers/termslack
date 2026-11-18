@@ -1434,3 +1434,103 @@ test("a click report closes an open popup and opens the conversation", async () 
   signals.emit("SIGTERM");
   await finished;
 });
+
+test("an XTVERSION answer split right after ESC P during the probe is removed and Ghostty is detected", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+    intervalMs: 10,
+  });
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  for (const piece of ["x\x1b", "P", ">|ghostty 1.4.0\x1b\\\x1b[?62;22cy"]) {
+    terminal.stdin.write(piece);
+    await Bun.sleep(15);
+  }
+
+  await Bun.sleep(50);
+
+  expect(drawnSince(terminal, before)).toContain("xy");
+  expect(drawnSince(terminal, before)).not.toContain("ghostty");
+
+  await say(general, `<@${me}> split-marker`);
+  await waitFor(() => terminal.written().includes("\x1b]777;notify;"));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("answers split after ESC ], ESC ]9 or ESC [ during the probe are removed", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  for (const piece of [
+    "a\x1b]",
+    "99;i=termslack-probe:p=?;a=focus\x1b\\b\x1b",
+    "[?62;22cc",
+  ]) {
+    terminal.stdin.write(piece);
+    await Bun.sleep(15);
+  }
+
+  await Bun.sleep(50);
+
+  expect(drawnSince(terminal, before)).toContain("abc");
+  expect(drawnSince(terminal, before)).not.toContain("termslack-probe");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a lone Escape typed after the probe finished is not held", async () => {
+  const { terminal, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(ghosttyAnswers);
+  await Bun.sleep(30);
+  await startTyping(terminal);
+
+  terminal.stdin.write("\x1b");
+  await Bun.sleep(80);
+  terminal.stdin.write("q");
+
+  const quit = await Promise.race([
+    finished.then(() => true),
+    Bun.sleep(1000).then(() => false),
+  ]);
+
+  expect(quit).toBe(true);
+});
+
+test("an Escape held during the probe is released when the probe finishes", async () => {
+  const { terminal, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  await startTyping(terminal);
+
+  terminal.stdin.write("\x1b");
+  await Bun.sleep(50);
+  terminal.stdin.write(ghosttyAnswers);
+  await Bun.sleep(80);
+  terminal.stdin.write("q");
+
+  const quit = await Promise.race([
+    finished.then(() => true),
+    Bun.sleep(1000).then(() => false),
+  ]);
+
+  expect(quit).toBe(true);
+});

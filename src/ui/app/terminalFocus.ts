@@ -32,15 +32,17 @@ export function stripFocusReports(
  * Stdin as Ink should see it: the same stream, but its focus reports and
  * mouse reports are handled here (the mouse's by `onMouse`), so they can't
  * reach a key handler or the input box. (Ink drops them too, but without
- * saying they happened.) The terminal's answers to its probe go to `onAnswer`.
+ * saying they happened.) The terminal's answers to its probe go to `onAnswer`,
+ * and `isProbing` says whether the probe is still waiting for them.
  */
 export function withoutFocusReports<T extends NodeJS.ReadableStream>(
   stdin: T,
   onChange: (focused: boolean) => void,
   onMouse: (input: MouseInput) => void = () => {},
   onAnswer: (answer: TerminalAnswer) => void = () => {},
+  isProbing: () => boolean = () => false,
 ): T {
-  const stripAnswers = createTerminalAnswerFilter(onAnswer);
+  const stripAnswers = createTerminalAnswerFilter(onAnswer, isProbing);
   const stripMouseReports = createMouseReportFilter(onMouse);
 
   return new Proxy(stdin, {

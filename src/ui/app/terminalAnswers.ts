@@ -9,6 +9,12 @@ export type TerminalAnswer =
   | { kind: "da1" }
   | { kind: "notificationClick"; identifier: string };
 
+/** The answers to the probe's questions. */
+export type ProbeAnswer = Exclude<
+  TerminalAnswer,
+  { kind: "notificationClick" }
+>;
+
 /** What the probe worked out about the terminal. */
 export type ProbeResult = {
   name?: string;
@@ -31,6 +37,9 @@ const answer = new RegExp(
 );
 const unfinishedAnswer =
   /\x1bP>(?:\|[^\x07\x1b]*\x1b?)?$|\x1b\[\?[\d;]*$|\x1b\]99;[^\x07\x1b]*\x1b?$/;
+const unfinishedAnswerWhileProbing = new RegExp(
+  `${unfinishedAnswer.source}|\\x1b(?:P|\\[|\\]9?9?)?$`,
+);
 
 /** `key=value:key=value` with comma-separated values; malformed pairs are skipped. */
 function parseCapabilities(pairs: string): Record<string, string[]> {
@@ -56,10 +65,15 @@ function parseCapabilities(pairs: string): Record<string, string[]> {
  * Takes the terminal's answers out of its input, telling `onAnswer` about
  * each in order; what is left is what the user typed, unchanged. An answer
  * split across chunks is held until it is whole. Only a tail that can't be
- * typed (`ESC P >`, `ESC [ ?`, `ESC ] 99 ;`) is held, so a lone Escape key never waits.
+ * typed (`ESC P >`, `ESC [ ?`, `ESC ] 99 ;`) is held, so a lone Escape key
+ * never waits, except while `isProbing` says the probe is still waiting for
+ * its answers: then any start of an answer (`ESC`, `ESC P`, `ESC ]`...) is
+ * held too. A tail held that turned out not to be an answer comes out with
+ * the next chunk.
  */
 export function createTerminalAnswerFilter(
   onAnswer: (answer: TerminalAnswer) => void,
+  isProbing: () => boolean = () => false,
 ): (chunk: string) => string {
   let held = "";
 
@@ -88,7 +102,9 @@ export function createTerminalAnswerFilter(
         return "";
       },
     );
-    const cut = unfinishedAnswer.exec(text);
+    const cut = (
+      isProbing() ? unfinishedAnswerWhileProbing : unfinishedAnswer
+    ).exec(text);
 
     held = cut ? cut[0] : "";
 
@@ -121,7 +137,11 @@ export function createTerminalProbe(
   }
 
   return {
-    answer(received: TerminalAnswer) {
+    /** Whether it is still waiting for answers. */
+    get running() {
+      return !finished;
+    },
+    answer(received: ProbeAnswer) {
       if (finished) {
         return;
       }
@@ -135,10 +155,6 @@ export function createTerminalProbe(
       if (received.kind === "xtversion") {
         result.name = received.name;
 
-        return;
-      }
-
-      if (received.kind === "notificationClick") {
         return;
       }
 
