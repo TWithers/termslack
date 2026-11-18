@@ -107,9 +107,11 @@ desktopNotifications = false
 
 It is the same message as the bell, so the same rules apply (Do Not Disturb, the terminal being focused, several messages within about a second making one, at most one every 5 seconds). The title is the conversation and the author (`#random · Ana`; just the person for a DM), the body is the message as plain text, cut to 200 characters. A burst shows one notification, "3 new messages in #random" (or just "3 new messages" across conversations), with the newest message's text.
 
-Termslack sends the notification as an escape code, so it comes from the terminal itself, not from another program. For now that works in Ghostty (recognised by `TERM_PROGRAM=ghostty`). Any other terminal gets the bell only, and the status line says once that desktop notifications aren't supported by this terminal. Nothing is sent when output isn't a terminal.
+Termslack sends the notification as an escape code, so it comes from the terminal itself, not from another program. For now that works in Ghostty (recognised by `TERM_PROGRAM=ghostty`) and in iTerm2 (recognised by `TERM_PROGRAM=iTerm.app`). iTerm2's notification has a single line of text, so it reads `title: body` (`#random · Ana: the message`) instead of a title above a body. Any other terminal gets the bell only, and the status line says once that desktop notifications aren't supported by this terminal. Nothing is sent when output isn't a terminal.
 
 If you see none in Ghostty, check macOS: Ghostty must be allowed in System Settings → Notifications, with the style set to Banners or Alerts, and no Focus mode (such as Do Not Disturb) hiding them. Ghostty's own `desktop-notifications` setting is on by default.
+
+If you see none in iTerm2, open Settings → Profiles → Terminal and turn on **Notification Center Alerts**, then press **Filter Alerts…** and tick **Send escape sequence-generated alerts**. macOS must also allow iTerm2 in System Settings → Notifications.
 
 ## Presence
 

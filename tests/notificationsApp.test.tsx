@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { EventEmitter } from "node:events";
 import { waitFor } from "./support/fakeSlack";
+import { loadFixture } from "./support/fixtures";
 import { seedWorkspace, startAppHarness } from "./support/appHarness";
 import { fakeTerminal } from "./support/fakeTerminal";
 import {
@@ -33,6 +34,7 @@ async function startRunning({
   env = {},
   probeTimeoutMs = 20,
   history,
+  otherName,
 }: {
   bell?: boolean;
   windowMs?: number;
@@ -44,10 +46,33 @@ async function startRunning({
   probeTimeoutMs?: number;
   /** Messages #general's history holds. */
   history?: Record<string, unknown>[];
+  /** What the other person is called, in every name Slack gives. */
+  otherName?: string;
 } = {}) {
   harness = await startSessionHarness({
     prepare: async (slack) => {
       await seedWorkspace(slack);
+
+      if (otherName) {
+        const pages = await loadFixture("users-list");
+
+        slack.respondPaged(
+          "users.list",
+          pages.map((page) => ({
+            ...page,
+            members: page.members.map((member: Record<string, any>) =>
+              member.id === other
+                ? {
+                    ...member,
+                    name: otherName,
+                    real_name: otherName,
+                    profile: { ...member.profile, display_name: otherName },
+                  }
+                : member,
+            ),
+          })),
+        );
+      }
 
       if (history) {
         slack.respond("conversations.history", () => ({
@@ -698,4 +723,109 @@ test("quitting before the probe finishes leaves no timer or subscription", async
   await Bun.sleep(60);
 
   expect(terminal.written()).not.toContain(oscStart);
+});
+
+const iterm2Answers = "\x1bP>|iTerm2 3.5.0\x1b\\\x1b[?62;4c";
+
+function osc9Written(terminal: { written(): string }) {
+  return [...terminal.written().matchAll(/\x1b\]9;([^\x07]*)\x07/g)].map(
+    (match) => match[1]!,
+  );
+}
+
+test("iTerm2's answers, with no TERM_PROGRAM, lead to OSC 9 notifications of title: body", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(iterm2Answers);
+  await Bun.sleep(30);
+  await say(random, `<@${me}> hello`);
+  await waitFor(() => osc9Written(terminal).length === 1);
+
+  expect(osc9Written(terminal)[0]).toMatch(/^#random · .+: @\S+ hello$/);
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("TERM_PROGRAM=iTerm.app with no name also leads to OSC 9", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "iTerm.app" },
+  });
+
+  await say(random);
+  await waitFor(() => osc9Written(terminal).length === 1);
+
+  expect(terminal.written()).not.toContain(oscStart);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("the terminal's name wins over TERM_PROGRAM: Ghostty's name under iTerm.app gets OSC 777", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "iTerm.app" },
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(ghosttyAnswers);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  expect(osc9Written(terminal)).toEqual([]);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("control characters are removed from an OSC 9 notification", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "iTerm.app" },
+  });
+
+  await say(random, `<@${me}> a\x1b]0;evil\x07b\x9bc\x7fd e\x00f`);
+  await waitFor(() => terminal.written().includes("\x1b]9;"));
+
+  const written = terminal.written();
+  const start = written.indexOf("\x1b]9;");
+  const sequence = written.slice(start, written.indexOf("\x07", start) + 1);
+
+  expect(sequence).toMatch(/^\x1b\]9;[^\x00-\x1a\x1c-\x1f\x7f-\x9f]*\x07$/);
+  expect(sequence).toContain("a]0;evilbcd ef");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("OSC 9 text that would read as a numbered sub-command has its semicolon replaced", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "iTerm.app" },
+    otherName: "4;x",
+  });
+
+  await harness.sendEvents({
+    event: {
+      type: "message",
+      channel: "D0C0F7S8Y",
+      channel_type: "im",
+      user: other,
+      text: "hi",
+      ts: "1700000100.000002",
+    },
+  });
+  await waitFor(() => osc9Written(terminal).length === 1);
+
+  expect(osc9Written(terminal)[0]).toBe("4,x: hi");
+
+  signals.emit("SIGTERM");
+  await finished;
 });

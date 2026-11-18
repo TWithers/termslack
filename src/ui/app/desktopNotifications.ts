@@ -21,7 +21,7 @@ export type TerminalIdentity = {
 };
 
 /** The escape code a terminal shows notifications through, or none. */
-export type NotifierKind = "osc777" | "none";
+export type NotifierKind = "osc777" | "osc9" | "none";
 
 /** Shows a desktop notification by writing an escape code to the terminal. */
 export type DesktopNotifier = {
@@ -40,6 +40,10 @@ export function chooseNotifierKind({
 }: TerminalIdentity): NotifierKind {
   if (name?.startsWith("ghostty") || termProgram === "ghostty") {
     return "osc777";
+  }
+
+  if (name?.startsWith("iTerm2") || termProgram === "iTerm.app") {
+    return "osc9";
   }
 
   return "none";
@@ -66,13 +70,30 @@ export function createDesktopNotifier(
   return {
     show(notification) {
       const { title, body } = describeNotification(session, notification);
-      const cleanTitle = withoutControlCharacters(title).replaceAll(";", ",");
 
       write(
-        `\x1b]777;notify;${cleanTitle};${withoutControlCharacters(body)}\x07`,
+        kind === "osc9"
+          ? osc9Sequence(title, body)
+          : osc777Sequence(title, body),
       );
     },
   };
+}
+
+function osc777Sequence(title: string, body: string): string {
+  const cleanTitle = withoutControlCharacters(title).replaceAll(";", ",");
+
+  return `\x1b]777;notify;${cleanTitle};${withoutControlCharacters(body)}\x07`;
+}
+
+/**
+ * OSC 9 has one text field. Text that starts with digits and a `;` is read
+ * as a numbered sub-command (progress, for one), so that `;` becomes a comma.
+ */
+function osc9Sequence(title: string, body: string): string {
+  const text = `${withoutControlCharacters(title)}: ${withoutControlCharacters(body)}`;
+
+  return `\x1b]9;${text.replace(/^(\d+);/, "$1,")}\x07`;
 }
 
 function truncate(text: string, length: number): string {
