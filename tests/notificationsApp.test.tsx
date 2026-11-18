@@ -31,6 +31,7 @@ async function startRunning({
   intervalMs,
   desktop,
   env = {},
+  probeTimeoutMs = 20,
   history,
 }: {
   bell?: boolean;
@@ -39,6 +40,8 @@ async function startRunning({
   desktop?: boolean;
   /** The terminal's environment: its TERM_PROGRAM decides the notification code. */
   env?: Record<string, string | undefined>;
+  /** How long the startup probe waits for the terminal's answer. */
+  probeTimeoutMs?: number;
   /** Messages #general's history holds. */
   history?: Record<string, unknown>[];
 } = {}) {
@@ -73,6 +76,7 @@ async function startRunning({
       bell,
       desktopNotifications: desktop,
       env,
+      probeTimeoutMs,
       ringBell: () => bells.push(Date.now()),
       stdout: terminal.stdout,
       stdin: terminal.stdin as unknown as NodeJS.ReadStream,
@@ -475,6 +479,221 @@ test("after quitting, desktop notifications stop", async () => {
 
   signals.emit("SIGTERM");
   await finished;
+  await say(random).catch(() => undefined);
+  await Bun.sleep(60);
+
+  expect(terminal.written()).not.toContain(oscStart);
+});
+
+async function startTyping(terminal: {
+  stdin: { write(text: string): unknown };
+}) {
+  terminal.stdin.write("\t");
+  await Bun.sleep(50);
+  terminal.stdin.write("i");
+  await Bun.sleep(50);
+}
+
+/** What was drawn after `since`, as plain text. */
+function drawnSince(terminal: { written(): string }, since: number) {
+  return Bun.stripANSI(terminal.written().slice(since));
+}
+
+const probeBytes = "\x1b[>0q\x1b[c";
+const ghosttyAnswers = "\x1bP>|ghostty 1.4.0\x1b\\\x1b[?62;22;52c";
+const soloAnswer = "\x1b[?64;1;2;6;22c";
+
+test.each([
+  ["on with a terminal", true],
+  ["off", false],
+] as const)(
+  "the probe's bytes are written when notifications are %s",
+  async (_, desktop) => {
+    const { terminal, signals, finished } = await startRunning({ desktop });
+
+    expect(terminal.written().includes(probeBytes)).toBe(desktop);
+
+    signals.emit("SIGTERM");
+    await finished;
+  },
+);
+
+test("the probe is written once, after the reporting setup", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+  });
+  const written = terminal.written();
+
+  expect(written.split(probeBytes)).toHaveLength(2);
+  expect(written.indexOf(probeBytes)).toBeGreaterThan(written.indexOf(focusOn));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("Ghostty's answers, with no TERM_PROGRAM, lead to OSC 777 notifications", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(ghosttyAnswers);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("Solo's answer gives no name, so TERM_PROGRAM decides", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(soloAnswer);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("Solo's answer with no TERM_PROGRAM says notifications aren't supported", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(soloAnswer);
+  await waitFor(() => terminal.written().includes("aren't supported"));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("with no answer before the timeout, TERM_PROGRAM decides", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+    probeTimeoutMs: 100,
+  });
+
+  await Bun.sleep(150);
+  await say(random);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("before the probe finishes there is no desktop notifier", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+    probeTimeoutMs: 5000,
+  });
+
+  await say(random);
+  await Bun.sleep(100);
+
+  expect(notificationsWritten(terminal)).toHaveLength(0);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("answers ended by BEL or ST are both removed from typed text", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write("a\x1bP>|ghostty 1.4.0\x07b");
+  terminal.stdin.write("c\x1bP>|ghostty 1.4.0\x1b\\d\x1b[?62;22;52ce");
+  await Bun.sleep(80);
+
+  expect(drawnSince(terminal, before)).toContain("abcde");
+  expect(drawnSince(terminal, before)).not.toContain("ghostty");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("an answer split across chunks is removed, not leaked", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  for (const piece of [
+    "x\x1bP>|ghos",
+    "tty 1.4.0\x1b",
+    "\\y\x1b[?62;",
+    "22cz",
+  ]) {
+    terminal.stdin.write(piece);
+    await Bun.sleep(15);
+  }
+
+  await Bun.sleep(50);
+
+  expect(drawnSince(terminal, before)).toContain("xyz");
+  expect(drawnSince(terminal, before)).not.toContain("ghostty 1.4.0");
+  expect(drawnSince(terminal, before)).not.toContain("62;22");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a late answer is removed and changes nothing", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "Apple_Terminal" },
+    probeTimeoutMs: 50,
+  });
+
+  await Bun.sleep(100);
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(`k${ghosttyAnswers}m`);
+  await Bun.sleep(80);
+
+  expect(drawnSince(terminal, before)).toContain("km");
+  await say(random);
+  await Bun.sleep(100);
+
+  expect(notificationsWritten(terminal)).toHaveLength(0);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("quitting before the probe finishes leaves no timer or subscription", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: ghostty,
+    probeTimeoutMs: 100,
+  });
+
+  signals.emit("SIGTERM");
+  await finished;
+  await Bun.sleep(150);
   await say(random).catch(() => undefined);
   await Bun.sleep(60);
 

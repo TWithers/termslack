@@ -11,6 +11,7 @@ import {
   mouseReportingOn,
 } from "./mouse";
 import { createNotice } from "./notice";
+import { createTerminalProbe, terminalProbe } from "./terminalAnswers";
 import { applyTheme, defaultThemeName } from "../theme";
 import {
   focusReportingOff,
@@ -50,6 +51,8 @@ export type RunOptions = Pick<RenderOptions, "stdout" | "stdin"> & {
   desktopNotifications?: boolean;
   /** The terminal's environment, where `TERM_PROGRAM` names it. Default: `process.env`. */
   env?: Record<string, string | undefined>;
+  /** How long to wait for the terminal to answer the startup probe, in ms. Default 1000. */
+  probeTimeoutMs?: number;
 };
 
 const quitSignals = ["SIGINT", "SIGTERM"] as const;
@@ -71,11 +74,13 @@ export async function runApp(
     ringBell: ring,
     desktopNotifications = false,
     env = process.env,
+    probeTimeoutMs = 1000,
     ...streams
   }: RunOptions = {},
 ): Promise<void> {
   const stdout = streams.stdout ?? process.stdout;
   const mouse = createMouseSource();
+  let probe: ReturnType<typeof createTerminalProbe> | undefined;
   const stdin = withoutFocusReports(
     streams.stdin ?? process.stdin,
     (focused) => {
@@ -86,6 +91,7 @@ export async function runApp(
       }
     },
     mouse.emit,
+    (answer) => probe?.answer(answer),
   );
   const notice = createNotice();
 
@@ -98,16 +104,26 @@ export async function runApp(
 
   const desktopWanted =
     desktopNotifications && (stdout as { isTTY?: boolean }).isTTY === true;
-  const notifier = desktopWanted
-    ? createDesktopNotifier(
-        chooseNotifierKind({ termProgram: env.TERM_PROGRAM }),
+  let stopListeningForDesktop: (() => void) | undefined;
+
+  if (desktopWanted) {
+    probe = createTerminalProbe(probeTimeoutMs, (name) => {
+      const notifier = createDesktopNotifier(
+        chooseNotifierKind({ name, termProgram: env.TERM_PROGRAM }),
         props.session,
         (bytes) => void stdout.write(bytes),
-      )
-    : undefined;
+      );
 
-  if (desktopWanted && !notifier) {
-    notice.set(noDesktopNotificationsNotice);
+      if (!notifier) {
+        notice.set(noDesktopNotificationsNotice);
+
+        return;
+      }
+
+      stopListeningForDesktop = props.session.subscribeToNotifications(
+        notifier.show,
+      );
+    });
   }
 
   const instance = render(<App {...props} notice={notice} mouse={mouse} />, {
@@ -127,15 +143,13 @@ export async function runApp(
   const stopListeningForBells = bell
     ? props.session.subscribeToNotifications(ringTheBell)
     : undefined;
-  const stopListeningForDesktop = notifier
-    ? props.session.subscribeToNotifications(notifier.show)
-    : undefined;
 
   stdout.write(
     saveTitle +
       setTitle(workspaceTitle(props.workspaceName)) +
       focusReportingOn +
-      mouseReportingOn,
+      mouseReportingOn +
+      (desktopWanted ? terminalProbe : ""),
   );
   process.once("exit", restoreTerminal);
 
@@ -148,6 +162,7 @@ export async function runApp(
   } finally {
     process.off("exit", restoreTerminal);
     restoreTerminal();
+    probe?.stop();
     stopListeningForBells?.();
     stopListeningForDesktop?.();
 

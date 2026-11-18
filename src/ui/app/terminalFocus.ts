@@ -1,4 +1,8 @@
 import { createMouseReportFilter, type MouseInput } from "./mouse";
+import {
+  createTerminalAnswerFilter,
+  type TerminalAnswer,
+} from "./terminalAnswers";
 
 /** Asks the terminal to report when its window gains or loses focus, as `ESC [ I` and `ESC [ O` on stdin. */
 export const focusReportingOn = "\x1b[?1004h";
@@ -28,13 +32,15 @@ export function stripFocusReports(
  * Stdin as Ink should see it: the same stream, but its focus reports and
  * mouse reports are handled here (the mouse's by `onMouse`), so they can't
  * reach a key handler or the input box. (Ink drops them too, but without
- * saying they happened.)
+ * saying they happened.) The terminal's answers to its probe go to `onAnswer`.
  */
 export function withoutFocusReports<T extends NodeJS.ReadableStream>(
   stdin: T,
   onChange: (focused: boolean) => void,
   onMouse: (input: MouseInput) => void = () => {},
+  onAnswer: (answer: TerminalAnswer) => void = () => {},
 ): T {
+  const stripAnswers = createTerminalAnswerFilter(onAnswer);
   const stripMouseReports = createMouseReportFilter(onMouse);
 
   return new Proxy(stdin, {
@@ -49,7 +55,7 @@ export function withoutFocusReports<T extends NodeJS.ReadableStream>(
             )) !== null
           ) {
             const text = stripFocusReports(
-              stripMouseReports(String(chunk)),
+              stripMouseReports(stripAnswers(String(chunk))),
               onChange,
             );
 
