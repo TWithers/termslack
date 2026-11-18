@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 - 2026-11-18
+
+### Added
+
+- Each channel can notify for mentions only (the default), every message, or nothing, chosen from the channel menu (`m` then `n`) and remembered per workspace.
+- Desktop notifications come from the terminal itself: termslack asks the terminal what it supports at startup and uses kitty's OSC 99 (and Solo's), Ghostty's OSC 777 or iTerm2's OSC 9. They follow the terminal's own notification settings.
+- In kitty, clicking a notification brings the terminal forward and opens the conversation (and the thread, for a thread reply); each conversation keeps one notification, replaced by newer messages; DMs are critical; a notification closes once you open its conversation, and any still shown close when termslack quits.
+
+### Changed
+
+- One `notifications` setting replaces `bell` and `desktopNotifications`: `"desktop"` (the default), `"bell"` or `"off"`. With `"desktop"` the bell rings only where the terminal can't show a notification. Old `bell = false` and `desktopNotifications = false` settings still work.
+- Desktop notifications are on by default.
+- Notifications come at most every 5 seconds instead of once a minute.
+
+### Removed
+
+- Desktop notifications through `osascript` and `notify-send`.
+
 ## 0.2.1 - 2026-11-17
 
 ### Fixed
