@@ -12,6 +12,7 @@ import {
   conversationTitle,
   personName,
 } from "../../session/people";
+import type { ActivationTarget } from "./notificationActions";
 import type { WorkspaceSession } from "../../session/workspaceSession";
 
 /** What the app learned about the terminal it runs in. */
@@ -26,7 +27,7 @@ export type TerminalIdentity = {
 
 /** The escape code a terminal shows notifications through, or none. */
 export type NotifierKind =
-  | { code: "osc99"; critical: boolean }
+  | { code: "osc99"; critical: boolean; clickable?: boolean }
   | { code: "osc777" }
   | { code: "osc9" }
   | { code: "none" };
@@ -34,6 +35,8 @@ export type NotifierKind =
 /** Shows a desktop notification by writing an escape code to the terminal. */
 export type DesktopNotifier = {
   show(notification: Notification): void;
+  /** Where a click on the notification with this OSC 99 identifier leads, if it was shown in this run. */
+  activate(identifier: string): ActivationTarget | undefined;
 };
 
 export const maxBodyLength = 200;
@@ -48,10 +51,13 @@ export function chooseNotifierKind({
   osc99,
 }: TerminalIdentity): NotifierKind {
   if (osc99) {
-    return { code: "osc99", critical: osc99.u?.includes("2") ?? false };
+    return {
+      code: "osc99",
+      critical: osc99.u?.includes("2") ?? false,
+      clickable: osc99.a?.includes("report") ?? false,
+    };
   }
 
-  // Ticket 05: a kitty row goes here, ahead of solo, for answers whose `a` includes `report`.
   if (termProgram === "solo") {
     return { code: "osc99", critical: false };
   }
@@ -85,19 +91,30 @@ export function createDesktopNotifier(
     return undefined;
   }
 
+  const shown = new Map<string, ActivationTarget>();
+
   return {
+    activate(identifier) {
+      return shown.get(identifier);
+    },
     show(notification) {
       const { title, body } = describeNotification(session, notification);
 
       if (kind.code === "osc99") {
-        const { conversationId, conversationKind } = notification.newest;
+        const { conversationId, conversationKind, threadTs } =
+          notification.newest;
 
+        shown.set(osc99Identifier(conversationId), {
+          conversationId,
+          threadTs,
+        });
         write(
           osc99Sequence(
             title,
             body,
             conversationId,
             kind.critical && isDirectMessage(conversationKind),
+            kind.clickable === true,
           ),
         );
 
@@ -113,19 +130,28 @@ export function createDesktopNotifier(
   };
 }
 
-/** Title and body as two base64 parts of one notification; `u=2` asks for critical urgency. */
+function osc99Identifier(conversationId: string): string {
+  return `termslack-${conversationId}`;
+}
+
+/**
+ * Title and body as two base64 parts of one notification; `u=2` asks for
+ * critical urgency, and `a=focus,report` for the window to come forward and
+ * the click to be reported on stdin.
+ */
 function osc99Sequence(
   title: string,
   body: string,
   conversationId: string,
   critical: boolean,
+  clickable: boolean,
 ): string {
-  const id = `termslack-${conversationId}`;
+  const id = osc99Identifier(conversationId);
   const encode = (text: string) =>
     Buffer.from(withoutControlCharacters(text), "utf8").toString("base64");
 
   return (
-    `\x1b]99;i=${id}:d=0:e=1${critical ? ":u=2" : ""};${encode(title)}\x1b\\` +
+    `\x1b]99;i=${id}${clickable ? ":a=focus,report" : ""}:d=0:e=1${critical ? ":u=2" : ""};${encode(title)}\x1b\\` +
     `\x1b]99;i=${id}:p=body:e=1;${encode(body)}\x1b\\`
   );
 }

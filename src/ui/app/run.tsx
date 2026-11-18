@@ -11,6 +11,7 @@ import {
   mouseReportingOn,
 } from "./mouse";
 import { createNotice } from "./notice";
+import { createNotificationActions } from "./notificationActions";
 import { createTerminalProbe, terminalProbe } from "./terminalAnswers";
 import { applyTheme, defaultThemeName } from "../theme";
 import {
@@ -80,6 +81,8 @@ export async function runApp(
 ): Promise<void> {
   const stdout = streams.stdout ?? process.stdout;
   const mouse = createMouseSource();
+  const notificationActions = createNotificationActions();
+  let notifier: ReturnType<typeof createDesktopNotifier>;
   let probe: ReturnType<typeof createTerminalProbe> | undefined;
   const stdin = withoutFocusReports(
     streams.stdin ?? process.stdin,
@@ -91,7 +94,19 @@ export async function runApp(
       }
     },
     mouse.emit,
-    (answer) => probe?.answer(answer),
+    (answer) => {
+      if (answer.kind !== "notificationClick") {
+        probe?.answer(answer);
+
+        return;
+      }
+
+      const target = notifier?.activate(answer.identifier);
+
+      if (target) {
+        notificationActions.activate(target);
+      }
+    },
   );
   const notice = createNotice();
 
@@ -108,7 +123,7 @@ export async function runApp(
 
   if (desktopWanted) {
     probe = createTerminalProbe(probeTimeoutMs, ({ name, osc99 }) => {
-      const notifier = createDesktopNotifier(
+      notifier = createDesktopNotifier(
         chooseNotifierKind({ name, osc99, termProgram: env.TERM_PROGRAM }),
         props.session,
         (bytes) => void stdout.write(bytes),
@@ -126,16 +141,24 @@ export async function runApp(
     });
   }
 
-  const instance = render(<App {...props} notice={notice} mouse={mouse} />, {
-    ...streams,
-    stdin,
-    alternateScreen: true,
-    // Ink treats any environment with CI set as non-interactive and draws only
-    // the last frame; termslack is interactive whenever it has a terminal.
-    interactive: (stdout as { isTTY?: boolean }).isTTY === true,
-    exitOnCtrlC: false,
-    ...(kittyKeyboard ? { kittyKeyboard: { mode: "auto" as const } } : {}),
-  });
+  const instance = render(
+    <App
+      {...props}
+      notice={notice}
+      mouse={mouse}
+      notificationActions={notificationActions}
+    />,
+    {
+      ...streams,
+      stdin,
+      alternateScreen: true,
+      // Ink treats any environment with CI set as non-interactive and draws only
+      // the last frame; termslack is interactive whenever it has a terminal.
+      interactive: (stdout as { isTTY?: boolean }).isTTY === true,
+      exitOnCtrlC: false,
+      ...(kittyKeyboard ? { kittyKeyboard: { mode: "auto" as const } } : {}),
+    },
+  );
   const quit = () => instance.unmount();
   const restoreTerminal = () =>
     void stdout.write(mouseReportingOff + focusReportingOff + restoreTitle);

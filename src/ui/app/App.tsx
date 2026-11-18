@@ -19,6 +19,10 @@ import type {
 import { ComposedPane } from "./ComposedPane";
 import type { MouseLayout } from "./hitTest";
 import type { MouseSource } from "./mouse";
+import type {
+  ActivationTarget,
+  NotificationActions,
+} from "./notificationActions";
 import { PopupOverlay } from "./PopupOverlay";
 import { handleSelectionKey } from "./paneKeys";
 import { pressed, shortcutKeys } from "./shortcuts";
@@ -121,6 +125,8 @@ export type AppProps = {
   saveTheme?: (name: string) => Promise<void>;
   /** Where the terminal's mouse reports arrive. Default: none do, so the mouse does nothing. */
   mouse?: MouseSource;
+  /** Where clicks on desktop notifications arrive. Default: none do. */
+  notificationActions?: NotificationActions;
 };
 
 const goneText = "That message has been deleted.";
@@ -200,6 +206,7 @@ export function App({
   notice,
   saveTheme = async () => {},
   mouse,
+  notificationActions,
 }: AppProps) {
   const { exit } = useApp();
   const { columns, rows } = useWindowSize();
@@ -758,6 +765,39 @@ export function App({
     openThreadOf,
   });
   const hoveredId = hoveredLine && lineKey(hoveredLine);
+  const [pendingActivation, setPendingActivation] = useState<
+    ActivationTarget | undefined
+  >();
+
+  const activateRef = useRef((_target: ActivationTarget) => {});
+
+  activateRef.current = (target) => {
+    openConversation(target.conversationId, { remember: true });
+    requestFocus("messages");
+    setPendingActivation(target);
+  };
+
+  useEffect(
+    () =>
+      notificationActions?.onActivate((target) => activateRef.current(target)),
+    [notificationActions],
+  );
+
+  useEffect(() => {
+    if (
+      pendingActivation === undefined ||
+      openId !== pendingActivation.conversationId
+    ) {
+      return;
+    }
+
+    setPendingActivation(undefined);
+
+    if (pendingActivation.threadTs !== undefined) {
+      thread.open(openId, pendingActivation.threadTs, { load: true });
+      requestFocus("thread");
+    }
+  }, [pendingActivation, openId]);
 
   useInput((input, key) => {
     if (pressed("global.interrupt", input, key)) {

@@ -6,7 +6,8 @@ export const terminalProbe =
 export type TerminalAnswer =
   | { kind: "osc99"; capabilities: Record<string, string[]> }
   | { kind: "xtversion"; name: string }
-  | { kind: "da1" };
+  | { kind: "da1" }
+  | { kind: "notificationClick"; identifier: string };
 
 /** What the probe worked out about the terminal. */
 export type ProbeResult = {
@@ -18,8 +19,14 @@ const xtversionAnswer = /\x1bP>\|([^\x07\x1b]*)(?:\x1b\\|\x07)/g;
 const da1Answer = /\x1b\[\?[\d;]*c/g;
 const osc99Answer =
   /\x1b\]99;i=termslack-probe:p=\?;([^\x07\x1b]*)(?:\x1b\\|\x07)/g;
+/**
+ * kitty's report of a click on a notification: `ESC ] 99 ; i=<id> ; ST`, with
+ * a button number before the ST for a click on a button (none are sent, so a
+ * numbered report counts as a click on the body).
+ */
+const osc99Click = /\x1b\]99;i=([^:;\x07\x1b]+);\d*(?:\x1b\\|\x07)/g;
 const answer = new RegExp(
-  `${xtversionAnswer.source}|${da1Answer.source}|${osc99Answer.source}`,
+  `${xtversionAnswer.source}|${da1Answer.source}|${osc99Answer.source}|${osc99Click.source}`,
   "g",
 );
 const unfinishedAnswer =
@@ -59,8 +66,15 @@ export function createTerminalAnswerFilter(
   return (chunk) => {
     const text = (held + chunk).replace(
       answer,
-      (match, name: string | undefined, pairs: string | undefined) => {
-        if (match.startsWith("\x1b]")) {
+      (
+        match,
+        name: string | undefined,
+        pairs: string | undefined,
+        clicked: string | undefined,
+      ) => {
+        if (clicked !== undefined) {
+          onAnswer({ kind: "notificationClick", identifier: clicked });
+        } else if (match.startsWith("\x1b]")) {
           onAnswer({
             kind: "osc99",
             capabilities: parseCapabilities(pairs ?? ""),
@@ -121,6 +135,10 @@ export function createTerminalProbe(
       if (received.kind === "xtversion") {
         result.name = received.name;
 
+        return;
+      }
+
+      if (received.kind === "notificationClick") {
         return;
       }
 

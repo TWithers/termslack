@@ -1057,3 +1057,159 @@ test("the OSC 99 answer is removed from typed text, whole, split, and ended by B
   signals.emit("SIGTERM");
   await finished;
 });
+
+const kittyReportAnswer =
+  "\x1b]99;i=termslack-probe:p=?;a=focus,report:o=always,unfocused,invisible:p=title,body:u=0,1,2\x1b\\";
+const clickReport = (conversationId: string, end = "\x1b\\") =>
+  `\x1b]99;i=termslack-${conversationId};${end}`;
+
+async function startKitty() {
+  const running = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+    intervalMs: 10,
+  });
+
+  running.terminal.stdin.write(kittyReportAnswer + da1);
+  await Bun.sleep(30);
+
+  return running;
+}
+
+test("an answer listing report leads to OSC 99 with focus and report actions", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> one`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+  await say(random, `<@${me}> two`);
+  await waitFor(() => osc99Written(terminal).length === 4);
+  await say(general, `<@${me}> three`);
+  await waitFor(() => osc99Written(terminal).length === 6);
+
+  const titles = osc99Written(terminal).filter((part) => part.params.d);
+
+  expect(titles[0]!.params).toEqual({
+    i: "termslack-C061EG9T2",
+    a: "focus,report",
+    d: "0",
+    e: "1",
+  });
+  expect(titles.map((title) => title.params.i)).toEqual([
+    "termslack-C061EG9T2",
+    "termslack-C061EG9T2",
+    "termslack-C012AB3CD",
+  ]);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("an answer without report still gets plain OSC 99", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(kittyAnswer + da1);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(osc99Written(terminal)[0]!.params.a).toBeUndefined();
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a click report for a notified channel mention opens that channel", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> kitty-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => drawnSince(terminal, before).includes("─ #random ─"));
+
+  expect(drawnSince(terminal, before)).not.toContain("termslack-");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a click report for a notified thread reply opens the conversation and its thread", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> reply-marker`, "1700000000.000900");
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => drawnSince(terminal, before).includes(" Thread "));
+  await waitFor(() => drawnSince(terminal, before).includes("reply-marker"));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a click report for a burst opens the newest message's conversation", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(general, `<@${me}> earlier`);
+  await say(random, `<@${me}> newest-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => drawnSince(terminal, before).includes("─ #random ─"));
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a click report with an unknown identifier does nothing", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> unknown-marker`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const before = terminal.written().length;
+
+  terminal.stdin.write(clickReport("C0NOSUCH00"));
+  await Bun.sleep(150);
+
+  expect(drawnSince(terminal, before)).not.toContain("─ #random ─");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("click reports never reach the input box, whole or split", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  for (const piece of [
+    `a${clickReport(random)}b${clickReport(general, "\x07")}c`,
+    "\x1b]99;i=termslack-C0",
+    "61EG9T2;",
+    "\x1b",
+    "\\d\x1b]99;i=termslack-C061EG9T2;1\x1b\\e",
+  ]) {
+    terminal.stdin.write(piece);
+    await Bun.sleep(15);
+  }
+
+  await Bun.sleep(50);
+
+  expect(drawnSince(terminal, before)).toContain("abcde");
+  expect(drawnSince(terminal, before)).not.toContain("termslack-");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
