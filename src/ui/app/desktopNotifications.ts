@@ -1,4 +1,8 @@
-import { type Conversation, isChannel } from "../../session/events";
+import {
+  type Conversation,
+  isChannel,
+  isDirectMessage,
+} from "../../session/events";
 import type {
   Notification,
   NotifiedMessage,
@@ -21,7 +25,11 @@ export type TerminalIdentity = {
 };
 
 /** The escape code a terminal shows notifications through, or none. */
-export type NotifierKind = "osc777" | "osc9" | "none";
+export type NotifierKind =
+  | { code: "osc99"; critical: boolean }
+  | { code: "osc777" }
+  | { code: "osc9" }
+  | { code: "none" };
 
 /** Shows a desktop notification by writing an escape code to the terminal. */
 export type DesktopNotifier = {
@@ -37,16 +45,26 @@ export const noDesktopNotificationsNotice =
 export function chooseNotifierKind({
   name,
   termProgram,
+  osc99,
 }: TerminalIdentity): NotifierKind {
+  if (osc99) {
+    return { code: "osc99", critical: osc99.u?.includes("2") ?? false };
+  }
+
+  // Ticket 05: a kitty row goes here, ahead of solo, for answers whose `a` includes `report`.
+  if (termProgram === "solo") {
+    return { code: "osc99", critical: false };
+  }
+
   if (name?.startsWith("ghostty") || termProgram === "ghostty") {
-    return "osc777";
+    return { code: "osc777" };
   }
 
   if (name?.startsWith("iTerm2") || termProgram === "iTerm.app") {
-    return "osc9";
+    return { code: "osc9" };
   }
 
-  return "none";
+  return { code: "none" };
 }
 
 /** The text with C0 and C1 control characters removed, so it can't end or inject an escape code. */
@@ -63,7 +81,7 @@ export function createDesktopNotifier(
   session: WorkspaceSession,
   write: (bytes: string) => void,
 ): DesktopNotifier | undefined {
-  if (kind === "none") {
+  if (kind.code === "none") {
     return undefined;
   }
 
@@ -71,13 +89,45 @@ export function createDesktopNotifier(
     show(notification) {
       const { title, body } = describeNotification(session, notification);
 
+      if (kind.code === "osc99") {
+        const { conversationId, conversationKind } = notification.newest;
+
+        write(
+          osc99Sequence(
+            title,
+            body,
+            conversationId,
+            kind.critical && isDirectMessage(conversationKind),
+          ),
+        );
+
+        return;
+      }
+
       write(
-        kind === "osc9"
+        kind.code === "osc9"
           ? osc9Sequence(title, body)
           : osc777Sequence(title, body),
       );
     },
   };
+}
+
+/** Title and body as two base64 parts of one notification; `u=2` asks for critical urgency. */
+function osc99Sequence(
+  title: string,
+  body: string,
+  conversationId: string,
+  critical: boolean,
+): string {
+  const id = `termslack-${conversationId}`;
+  const encode = (text: string) =>
+    Buffer.from(withoutControlCharacters(text), "utf8").toString("base64");
+
+  return (
+    `\x1b]99;i=${id}:d=0:e=1${critical ? ":u=2" : ""};${encode(title)}\x1b\\` +
+    `\x1b]99;i=${id}:p=body:e=1;${encode(body)}\x1b\\`
+  );
 }
 
 function osc777Sequence(title: string, body: string): string {

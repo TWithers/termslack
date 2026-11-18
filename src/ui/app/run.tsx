@@ -107,9 +107,9 @@ export async function runApp(
   let stopListeningForDesktop: (() => void) | undefined;
 
   if (desktopWanted) {
-    probe = createTerminalProbe(probeTimeoutMs, (name) => {
+    probe = createTerminalProbe(probeTimeoutMs, ({ name, osc99 }) => {
       const notifier = createDesktopNotifier(
-        chooseNotifierKind({ name, termProgram: env.TERM_PROGRAM }),
+        chooseNotifierKind({ name, osc99, termProgram: env.TERM_PROGRAM }),
         props.session,
         (bytes) => void stdout.write(bytes),
       );

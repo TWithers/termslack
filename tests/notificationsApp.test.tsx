@@ -524,7 +524,7 @@ function drawnSince(terminal: { written(): string }, since: number) {
   return Bun.stripANSI(terminal.written().slice(since));
 }
 
-const probeBytes = "\x1b[>0q\x1b[c";
+const probeBytes = "\x1b]99;i=termslack-probe:p=?;\x1b\\\x1b[>0q\x1b[c";
 const ghosttyAnswers = "\x1bP>|ghostty 1.4.0\x1b\\\x1b[?62;22;52c";
 const soloAnswer = "\x1b[?64;1;2;6;22c";
 
@@ -825,6 +825,234 @@ test("OSC 9 text that would read as a numbered sub-command has its semicolon rep
   await waitFor(() => osc9Written(terminal).length === 1);
 
   expect(osc9Written(terminal)[0]).toBe("4,x: hi");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+const kittyAnswer =
+  "\x1b]99;i=termslack-probe:p=?;a=focus:o=always,unfocused,invisible:p=title,body:u=0,1,2\x1b\\";
+const kittyAnswerWithoutUrgency =
+  "\x1b]99;i=termslack-probe:p=?;a=focus:o=always:x=whatever:bogus:p=title,body\x1b\\";
+const da1 = "\x1b[?62;22c";
+
+type Osc99Part = { params: Record<string, string>; text: string };
+
+function osc99Written(terminal: { written(): string }): Osc99Part[] {
+  return [
+    ...terminal.written().matchAll(/\x1b\]99;([^;\x1b]*);([^\x1b]*)\x1b\\/g),
+  ]
+    .filter((match) => !match[1]!.includes("p=?") && match[2] !== "")
+    .map((match) => ({
+      params: Object.fromEntries(
+        match[1]!.split(":").map((pair) => pair.split("=") as [string, string]),
+      ),
+      text: Buffer.from(match[2]!, "base64").toString("utf8"),
+    }));
+}
+
+async function sendDirectMessage(text: string) {
+  await harness.sendEvents({
+    event: {
+      type: "message",
+      channel: "D012AB3CD",
+      channel_type: "im",
+      user: other,
+      text,
+      ts: "1700000200.000001",
+    },
+  });
+}
+
+test("an OSC 99 answer leads to a two-part base64 notification with title and body", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(kittyAnswer + da1);
+  await Bun.sleep(30);
+  await say(random, `<@${me}> héllo`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const [title, body] = osc99Written(terminal);
+
+  expect(title!.params).toEqual({
+    i: "termslack-C061EG9T2",
+    d: "0",
+    e: "1",
+  });
+  expect(title!.text).toStartWith("#random · ");
+  expect(body!.params).toEqual({
+    i: "termslack-C061EG9T2",
+    p: "body",
+    e: "1",
+  });
+  expect(body!.text).toMatch(/^@\S+ héllo$/);
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("Solo's answer with TERM_PROGRAM=solo leads to OSC 99 without urgency", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "solo" },
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(soloAnswer);
+  await Bun.sleep(30);
+  await sendDirectMessage("hi solo");
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  const [title, body] = osc99Written(terminal);
+
+  expect(title!.params).toEqual({
+    i: "termslack-D012AB3CD",
+    d: "0",
+    e: "1",
+  });
+  expect(body!.text).toBe("hi solo");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("TERM_PROGRAM=solo with no answer at all still leads to OSC 99", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "solo" },
+  });
+
+  await say(random);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("a direct message gets u=2 when the answer listed 2, a mention never does", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(kittyAnswer + da1);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => osc99Written(terminal).length === 2);
+  await sendDirectMessage("psst");
+  await waitFor(() => osc99Written(terminal).length === 4);
+
+  const [mention, , dm] = osc99Written(terminal);
+
+  expect(mention!.params.u).toBeUndefined();
+  expect(dm!.params).toEqual({
+    i: "termslack-D012AB3CD",
+    d: "0",
+    e: "1",
+    u: "2",
+  });
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("unknown keys and malformed pairs are ignored, and an answer without u gives no urgency", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(kittyAnswerWithoutUrgency + da1);
+  await Bun.sleep(30);
+  await sendDirectMessage("psst");
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(osc99Written(terminal)[0]!.params.u).toBeUndefined();
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("an answer without p still works", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write("\x1b]99;i=termslack-probe:p=?;u=0,1,2\x07" + da1);
+  await Bun.sleep(30);
+  await sendDirectMessage("psst");
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(osc99Written(terminal)[0]!.params.u).toBe("2");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("the OSC 99 answer wins over the terminal's name", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  terminal.stdin.write(kittyAnswer + ghosttyAnswers);
+  await Bun.sleep(30);
+  await say(random);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(notificationsWritten(terminal)).toEqual([]);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("OSC 99 control characters are removed before encoding", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    env: { TERM_PROGRAM: "solo" },
+  });
+
+  await say(random, `<@${me}> a\x1b]0;evil\x07b\x9bc\x00d`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  expect(osc99Written(terminal)[1]!.text).toContain("a]0;evilbcd");
+  expect(osc99Written(terminal)[1]!.text).not.toMatch(/[\x00-\x1f\x7f-\x9f]/);
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("the OSC 99 answer is removed from typed text, whole, split, and ended by BEL or ST", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+  });
+
+  await startTyping(terminal);
+
+  const before = terminal.written().length;
+
+  for (const piece of [
+    "a\x1b]99;i=termslack-probe:p=?;a=fo",
+    "cus:u=0,1\x1b",
+    "\\b\x1b]99;i=termslack-probe:p=?;u=2\x07c\x1b]99;",
+    "i=termslack-probe:p=?;\x1b\\d",
+  ]) {
+    terminal.stdin.write(piece);
+    await Bun.sleep(15);
+  }
+
+  await Bun.sleep(50);
+
+  expect(drawnSince(terminal, before)).toContain("abcd");
+  expect(drawnSince(terminal, before)).not.toContain("termslack-probe");
+  expect(drawnSince(terminal, before)).not.toContain("a=focus");
 
   signals.emit("SIGTERM");
   await finished;
