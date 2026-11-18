@@ -8,6 +8,7 @@ import {
   type SessionHarness,
   startSessionHarness,
 } from "./support/sessionHarness";
+import type { NotificationLevel } from "../src/config/config";
 import { runApp } from "../src/ui/app/run";
 
 let harness: SessionHarness;
@@ -27,19 +28,19 @@ const focusOut = "\x1b[O";
 let counter = 0;
 
 async function startRunning({
-  bell,
+  notifications,
   windowMs = 20,
   intervalMs,
-  desktop,
+  unknownNotifications,
   env = {},
   probeTimeoutMs = 20,
   history,
   otherName,
 }: {
-  bell?: boolean;
+  notifications?: NotificationLevel;
   windowMs?: number;
   intervalMs?: number;
-  desktop?: boolean;
+  unknownNotifications?: string;
   /** The terminal's environment: its TERM_PROGRAM decides the notification code. */
   env?: Record<string, string | undefined>;
   /** How long the startup probe waits for the terminal's answer. */
@@ -98,8 +99,8 @@ async function startRunning({
     { session: harness.session, workspaceName: "Acme" },
     {
       signals,
-      bell,
-      desktopNotifications: desktop,
+      notifications,
+      unknownNotifications,
       env,
       probeTimeoutMs,
       ringBell: () => bells.push(Date.now()),
@@ -249,7 +250,7 @@ test("a burst rings once, and the next minute's mentions wait for it", async () 
 
 test("with the bell turned off nothing rings", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
-    bell: false,
+    notifications: "off",
   });
 
   await say(random);
@@ -257,6 +258,78 @@ test("with the bell turned off nothing rings", async () => {
 
   expect(bells).toEqual([]);
   expect(terminal.written()).not.toContain("\x07");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("an unknown notifications value is named once in the status line", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    notifications: "desktop",
+    unknownNotifications: "loud",
+  });
+
+  await waitFor(() =>
+    terminal.written().includes('Unknown notifications "loud"'),
+  );
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("with notifications off no probe is written and no notice shows", async () => {
+  const { terminal, signals, finished, bells } = await startRunning({
+    notifications: "off",
+    env: { TERM_PROGRAM: "Apple_Terminal" },
+  });
+
+  await say(random, `<@${me}> plain`);
+  await Bun.sleep(100);
+
+  expect(bells).toEqual([]);
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(terminal.written()).not.toContain("aren't supported");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("with notifications on bell the bell rings and no probe is written", async () => {
+  const { terminal, signals, finished, bells } = await startRunning({
+    notifications: "bell",
+    env: ghostty,
+  });
+
+  await say(random, `<@${me}> plain`);
+  await waitFor(() => bells.length === 1);
+
+  expect(terminal.written()).not.toContain(oscStart);
+  expect(terminal.written()).not.toContain("\x1b]99;");
+
+  signals.emit("SIGTERM");
+  await finished;
+});
+
+test("in desktop notifications the bell rings until the probe finishes, then no more", async () => {
+  const { terminal, signals, finished, bells } = await startRunning({
+    notifications: "desktop",
+    env: ghostty,
+    probeTimeoutMs: 5000,
+    windowMs: 20,
+    intervalMs: 50,
+  });
+
+  await say(random, `<@${me}> early`);
+  await waitFor(() => bells.length === 1);
+  expect(notificationsWritten(terminal)).toHaveLength(0);
+
+  terminal.stdin.write("\x1bP>|ghostty 1.4.0\x1b\\\x1b[?62;22;52c");
+  await Bun.sleep(100);
+  await say(random, `<@${me}> later`);
+  await waitFor(() => notificationsWritten(terminal).length === 1);
+  await Bun.sleep(100);
+
+  expect(bells).toHaveLength(1);
 
   signals.emit("SIGTERM");
   await finished;
@@ -322,7 +395,7 @@ function notificationsWritten(terminal: { written(): string }) {
   ].map((match) => ({ title: match[1]!, body: match[2]! }));
 }
 
-test("desktop notifications are off unless asked for", async () => {
+test("desktop notifications are not sent at the default level", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
     env: ghostty,
   });
@@ -339,7 +412,7 @@ test("desktop notifications are off unless asked for", async () => {
 
 test("turned off, an unknown terminal gets no notice either", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: false,
+    notifications: "bell",
     env: { TERM_PROGRAM: "Apple_Terminal" },
   });
 
@@ -353,7 +426,7 @@ test("turned off, an unknown terminal gets no notice either", async () => {
 
 test("under Ghostty a notifying message writes one OSC 777 notification with conversation, author and plain text", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -362,7 +435,7 @@ test("under Ghostty a notifying message writes one OSC 777 notification with con
 
   const [shown] = notificationsWritten(terminal);
 
-  expect(bells).toHaveLength(1);
+  expect(bells).toEqual([]);
   expect(shown!.title).toStartWith("#random · ");
   expect(shown!.title).not.toContain("U222222222");
   expect(shown!.body).toMatch(/^bold hey @\S+ -- "quoted" second line$/);
@@ -374,7 +447,7 @@ test("under Ghostty a notifying message writes one OSC 777 notification with con
 
 test("a direct message is titled by the person who wrote", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -398,7 +471,7 @@ test("a direct message is titled by the person who wrote", async () => {
 
 test("control characters are removed from the notification and a semicolon in the title becomes a comma", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -421,7 +494,7 @@ test("control characters are removed from the notification and a semicolon in th
 
 test("a long message is cut", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -439,7 +512,7 @@ test("a long message is cut", async () => {
 
 test("a burst writes one summary with the newest text", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
     windowMs: 300,
   });
@@ -462,7 +535,7 @@ test("a burst writes one summary with the newest text", async () => {
 
 test("suppressed messages write nothing", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -479,7 +552,7 @@ test("suppressed messages write nothing", async () => {
 
 test("in a terminal with no known code the status line says so once and the bell carries on", async () => {
   const { terminal, signals, finished, bells } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "Apple_Terminal" },
   });
 
@@ -498,7 +571,7 @@ test("in a terminal with no known code the status line says so once and the bell
 
 test("after quitting, desktop notifications stop", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
   });
 
@@ -529,14 +602,19 @@ const ghosttyAnswers = "\x1bP>|ghostty 1.4.0\x1b\\\x1b[?62;22;52c";
 const soloAnswer = "\x1b[?64;1;2;6;22c";
 
 test.each([
-  ["on with a terminal", true],
-  ["off", false],
+  ["desktop", "desktop"],
+  ["bell", "bell"],
+  ["off", "off"],
 ] as const)(
   "the probe's bytes are written when notifications are %s",
-  async (_, desktop) => {
-    const { terminal, signals, finished } = await startRunning({ desktop });
+  async (_, notifications) => {
+    const { terminal, signals, finished } = await startRunning({
+      notifications,
+    });
 
-    expect(terminal.written().includes(probeBytes)).toBe(desktop);
+    expect(terminal.written().includes(probeBytes)).toBe(
+      notifications === "desktop",
+    );
 
     signals.emit("SIGTERM");
     await finished;
@@ -545,7 +623,7 @@ test.each([
 
 test("the probe is written once, after the reporting setup", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
   });
   const written = terminal.written();
 
@@ -558,7 +636,7 @@ test("the probe is written once, after the reporting setup", async () => {
 
 test("Ghostty's answers, with no TERM_PROGRAM, lead to OSC 777 notifications", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -575,7 +653,7 @@ test("Ghostty's answers, with no TERM_PROGRAM, lead to OSC 777 notifications", a
 
 test("Solo's answer gives no name, so TERM_PROGRAM decides", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
     probeTimeoutMs: 5000,
   });
@@ -591,7 +669,7 @@ test("Solo's answer gives no name, so TERM_PROGRAM decides", async () => {
 
 test("Solo's answer with no TERM_PROGRAM says notifications aren't supported", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -604,7 +682,7 @@ test("Solo's answer with no TERM_PROGRAM says notifications aren't supported", a
 
 test("with no answer before the timeout, TERM_PROGRAM decides", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
     probeTimeoutMs: 100,
   });
@@ -619,7 +697,7 @@ test("with no answer before the timeout, TERM_PROGRAM decides", async () => {
 
 test("before the probe finishes there is no desktop notifier", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
     probeTimeoutMs: 5000,
   });
@@ -635,7 +713,7 @@ test("before the probe finishes there is no desktop notifier", async () => {
 
 test("answers ended by BEL or ST are both removed from typed text", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -656,7 +734,7 @@ test("answers ended by BEL or ST are both removed from typed text", async () => 
 
 test("an answer split across chunks is removed, not leaked", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -686,7 +764,7 @@ test("an answer split across chunks is removed, not leaked", async () => {
 
 test("a late answer is removed and changes nothing", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "Apple_Terminal" },
     probeTimeoutMs: 50,
   });
@@ -711,7 +789,7 @@ test("a late answer is removed and changes nothing", async () => {
 
 test("quitting before the probe finishes leaves no timer or subscription", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: ghostty,
     probeTimeoutMs: 100,
   });
@@ -735,7 +813,7 @@ function osc9Written(terminal: { written(): string }) {
 
 test("iTerm2's answers, with no TERM_PROGRAM, lead to OSC 9 notifications of title: body", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -754,7 +832,7 @@ test("iTerm2's answers, with no TERM_PROGRAM, lead to OSC 9 notifications of tit
 
 test("TERM_PROGRAM=iTerm.app with no name also leads to OSC 9", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "iTerm.app" },
   });
 
@@ -769,7 +847,7 @@ test("TERM_PROGRAM=iTerm.app with no name also leads to OSC 9", async () => {
 
 test("the terminal's name wins over TERM_PROGRAM: Ghostty's name under iTerm.app gets OSC 777", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "iTerm.app" },
     probeTimeoutMs: 5000,
   });
@@ -787,7 +865,7 @@ test("the terminal's name wins over TERM_PROGRAM: Ghostty's name under iTerm.app
 
 test("control characters are removed from an OSC 9 notification", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "iTerm.app" },
   });
 
@@ -807,7 +885,7 @@ test("control characters are removed from an OSC 9 notification", async () => {
 
 test("OSC 9 text that would read as a numbered sub-command has its semicolon replaced", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "iTerm.app" },
     otherName: "4;x",
   });
@@ -866,7 +944,7 @@ async function sendDirectMessage(text: string) {
 
 test("an OSC 99 answer leads to a two-part base64 notification with title and body", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -898,7 +976,7 @@ test("an OSC 99 answer leads to a two-part base64 notification with title and bo
 
 test("Solo's answer with TERM_PROGRAM=solo leads to OSC 99 without urgency", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "solo" },
     probeTimeoutMs: 5000,
   });
@@ -923,7 +1001,7 @@ test("Solo's answer with TERM_PROGRAM=solo leads to OSC 99 without urgency", asy
 
 test("TERM_PROGRAM=solo with no answer at all still leads to OSC 99", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "solo" },
   });
 
@@ -936,7 +1014,7 @@ test("TERM_PROGRAM=solo with no answer at all still leads to OSC 99", async () =
 
 test("a direct message gets u=2 when the answer listed 2, a mention never does", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -963,7 +1041,7 @@ test("a direct message gets u=2 when the answer listed 2, a mention never does",
 
 test("unknown keys and malformed pairs are ignored, and an answer without u gives no urgency", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -980,7 +1058,7 @@ test("unknown keys and malformed pairs are ignored, and an answer without u give
 
 test("an answer without p still works", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -997,7 +1075,7 @@ test("an answer without p still works", async () => {
 
 test("the OSC 99 answer wins over the terminal's name", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -1014,7 +1092,7 @@ test("the OSC 99 answer wins over the terminal's name", async () => {
 
 test("OSC 99 control characters are removed before encoding", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     env: { TERM_PROGRAM: "solo" },
   });
 
@@ -1030,7 +1108,7 @@ test("OSC 99 control characters are removed before encoding", async () => {
 
 test("the OSC 99 answer is removed from typed text, whole, split, and ended by BEL or ST", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -1065,7 +1143,7 @@ const clickReport = (conversationId: string, end = "\x1b\\") =>
 
 async function startKitty() {
   const running = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
     intervalMs: 10,
   });
@@ -1106,7 +1184,7 @@ test("an answer listing report leads to OSC 99 with focus and report actions", a
 
 test("an answer without report still gets plain OSC 99", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -1301,7 +1379,7 @@ test("a notification for another conversation stays when focus returns", async (
 
 test("terminals without clickable notifications never get a close", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
     intervalMs: 10,
   });
@@ -1346,7 +1424,7 @@ test("quitting closes every clickable notification still shown, before the termi
 
 test("a terminal without clickable notifications gets no close on quitting", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
     intervalMs: 10,
   });
@@ -1377,7 +1455,7 @@ function deletes() {
 
 test("a click report cancels a pending delete question, so y deletes nothing in the old conversation", async () => {
   const running = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
     intervalMs: 10,
     history: myMessage,
@@ -1437,7 +1515,7 @@ test("a click report closes an open popup and opens the conversation", async () 
 
 test("an XTVERSION answer split right after ESC P during the probe is removed and Ghostty is detected", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
     intervalMs: 10,
   });
@@ -1465,7 +1543,7 @@ test("an XTVERSION answer split right after ESC P during the probe is removed an
 
 test("answers split after ESC ], ESC ]9 or ESC [ during the probe are removed", async () => {
   const { terminal, signals, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -1493,7 +1571,7 @@ test("answers split after ESC ], ESC ]9 or ESC [ during the probe are removed", 
 
 test("a lone Escape typed after the probe finished is not held", async () => {
   const { terminal, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 
@@ -1515,7 +1593,7 @@ test("a lone Escape typed after the probe finished is not held", async () => {
 
 test("an Escape held during the probe is released when the probe finishes", async () => {
   const { terminal, finished } = await startRunning({
-    desktop: true,
+    notifications: "desktop",
     probeTimeoutMs: 5000,
   });
 

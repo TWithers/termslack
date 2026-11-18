@@ -10,6 +10,7 @@ import {
   mouseReportingOff,
   mouseReportingOn,
 } from "./mouse";
+import type { NotificationLevel } from "../../config/config";
 import { createNotice } from "./notice";
 import { createNotificationActions } from "./notificationActions";
 import { createTerminalProbe, terminalProbe } from "./terminalAnswers";
@@ -44,12 +45,19 @@ export type RunOptions = Pick<RenderOptions, "stdout" | "stdin"> & {
   kittyKeyboard?: boolean;
   /** The theme to paint with (the config's `theme`). Default: the one already applied. An unknown name means the default, and the status line says so in the status line. */
   themeName?: string;
-  /** Whether mentions and DMs ring the terminal bell (the config's `bell`). Default true. */
-  bell?: boolean;
+  /**
+   * How mentions and DMs alert (the config's `notifications`): `desktop` shows
+   * a desktop notification where the terminal supports one and rings the bell
+   * until then and where it doesn't, `bell` only rings, `off` does neither.
+   * Without a TTY `desktop` behaves as `bell`. Default `bell`, so a run that
+   * isn't asked for notifications sends the terminal no probe; the config
+   * reader defaults to `desktop`.
+   */
+  notifications?: NotificationLevel;
+  /** A configured `notifications` value that is no level, named once in the status line. */
+  unknownNotifications?: string;
   /** Rings the bell. Default: writes the bell character to stdout. */
   ringBell?: () => void;
-  /** Whether what rings the bell also shows a desktop notification (the config's `desktopNotifications`). Default false. */
-  desktopNotifications?: boolean;
   /** The terminal's environment, where `TERM_PROGRAM` names it. Default: `process.env`. */
   env?: Record<string, string | undefined>;
   /** How long to wait for the terminal to answer the startup probe, in ms. Default 1000. */
@@ -71,9 +79,9 @@ export async function runApp(
     signals = process,
     kittyKeyboard = false,
     themeName,
-    bell = true,
+    notifications = "bell",
+    unknownNotifications,
     ringBell: ring,
-    desktopNotifications = false,
     env = process.env,
     probeTimeoutMs = 1000,
     ...streams
@@ -122,9 +130,16 @@ export async function runApp(
     );
   }
 
+  if (unknownNotifications !== undefined) {
+    notice.set(
+      `Unknown notifications "${unknownNotifications}", using desktop. Use "desktop", "bell" or "off".`,
+    );
+  }
+
+  const ringTheBell = ring ?? (() => void stdout.write(ringBell));
   const desktopWanted =
-    desktopNotifications && (stdout as { isTTY?: boolean }).isTTY === true;
-  let stopListeningForDesktop: (() => void) | undefined;
+    notifications === "desktop" &&
+    (stdout as { isTTY?: boolean }).isTTY === true;
 
   if (desktopWanted) {
     probe = createTerminalProbe(probeTimeoutMs, ({ name, osc99 }) => {
@@ -141,9 +156,6 @@ export async function runApp(
       }
 
       notificationActions.useDismisser(notifier.dismiss);
-      stopListeningForDesktop = props.session.subscribeToNotifications(
-        notifier.show,
-      );
     });
   }
 
@@ -170,10 +182,12 @@ export async function runApp(
     notifier?.closeAll();
     stdout.write(mouseReportingOff + focusReportingOff + restoreTitle);
   };
-  const ringTheBell = ring ?? (() => void stdout.write(ringBell));
-  const stopListeningForBells = bell
-    ? props.session.subscribeToNotifications(ringTheBell)
-    : undefined;
+  const stopListeningForAlerts =
+    notifications !== "off"
+      ? props.session.subscribeToNotifications((notification) =>
+          notifier ? notifier.show(notification) : ringTheBell(),
+        )
+      : undefined;
 
   stdout.write(
     saveTitle +
@@ -194,8 +208,7 @@ export async function runApp(
     process.off("exit", restoreTerminal);
     restoreTerminal();
     probe?.stop();
-    stopListeningForBells?.();
-    stopListeningForDesktop?.();
+    stopListeningForAlerts?.();
 
     for (const signal of quitSignals) {
       signals.off(signal, quit);

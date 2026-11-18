@@ -85,20 +85,36 @@ export function kittyKeyboardEnabled(configured: unknown): boolean {
   return configured === true;
 }
 
-/**
- * Whether the terminal bell rings for mentions and DMs (the top-level `bell`
- * in `config.toml`). On unless it is exactly `false`.
- */
-export function bellEnabled(configured: unknown): boolean {
-  return configured !== false;
-}
+export type NotificationLevel = "desktop" | "bell" | "off";
+
+const notificationLevels: readonly unknown[] = ["desktop", "bell", "off"];
 
 /**
- * Whether desktop notifications show for what rings the bell (the top-level
- * `desktopNotifications` in `config.toml`). On unless it is exactly `false`.
+ * How termslack alerts the user (the top-level `notifications` in
+ * `config.toml`). An explicit valid `notifications` wins; otherwise the old
+ * settings still count: `bell = false` means off, then
+ * `desktopNotifications = false` means the bell only. An invalid
+ * `notifications` means desktop, and comes back as `unknown` (its text) so the
+ * status line can name it.
  */
-export function desktopNotificationsEnabled(configured: unknown): boolean {
-  return configured !== false;
+export function notificationLevel(
+  config: Pick<Config, "notifications" | "bell" | "desktopNotifications">,
+): { level: NotificationLevel; unknown?: string } {
+  const { notifications, bell, desktopNotifications } = config;
+
+  if (notificationLevels.includes(notifications)) {
+    return { level: notifications as NotificationLevel };
+  }
+
+  if (notifications !== undefined) {
+    return { level: "desktop", unknown: String(notifications) };
+  }
+
+  if (bell === false) {
+    return { level: "off" };
+  }
+
+  return { level: desktopNotifications === false ? "bell" : "desktop" };
 }
 
 /**
@@ -175,9 +191,11 @@ export type Config = {
   defaultWorkspace?: string;
   /** Ask the terminal for the kitty keyboard protocol, so Shift+Enter inserts a newline (the user edits this). Unvalidated: see `kittyKeyboardEnabled`. */
   kittyKeyboard?: unknown;
-  /** Ring the terminal bell for mentions and DMs, on by default (the user edits this). Unvalidated: see `bellEnabled`. */
+  /** How to alert for mentions and DMs: `desktop` (the default), `bell` or `off` (the user edits this). Unvalidated: see `notificationLevel`. */
+  notifications?: unknown;
+  /** Older setting: `false` means `notifications = "off"`. Unvalidated: see `notificationLevel`. */
   bell?: unknown;
-  /** Show a desktop notification for what rings the bell, off by default (the user edits this). Unvalidated: see `desktopNotificationsEnabled`. */
+  /** Older setting: `false` means `notifications = "bell"`. Unvalidated: see `notificationLevel`. */
   desktopNotifications?: unknown;
   /** The theme to paint with, by name: `slack-dark` (the default) or one of Omarchy's (the user edits this). Unvalidated: see `chosenThemeName`. */
   theme?: unknown;

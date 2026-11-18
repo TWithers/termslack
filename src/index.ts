@@ -1,10 +1,9 @@
 #!/usr/bin/env bun
 import {
-  bellEnabled,
   chosenThemeName,
-  desktopNotificationsEnabled,
   kittyKeyboardEnabled,
   loadConfig,
+  notificationLevel,
   parseSections,
   recentDmLimit,
   saveThemeChoice,
@@ -267,8 +266,8 @@ async function main(): Promise<void> {
     await connect();
 
   if (!log) {
-    const { kittyKeyboard, bell, desktopNotifications, theme } =
-      await loadConfig();
+    const config = await loadConfig();
+    const { level, unknown } = notificationLevel(config);
 
     await runApp(
       {
@@ -283,10 +282,10 @@ async function main(): Promise<void> {
         saveTheme: saveThemeChoice,
       },
       {
-        kittyKeyboard: kittyKeyboardEnabled(kittyKeyboard),
-        themeName: chosenThemeName(theme),
-        bell: bellEnabled(bell),
-        desktopNotifications: desktopNotificationsEnabled(desktopNotifications),
+        kittyKeyboard: kittyKeyboardEnabled(config.kittyKeyboard),
+        themeName: chosenThemeName(config.theme),
+        notifications: level,
+        unknownNotifications: unknown,
       },
     );
     process.exit(0);

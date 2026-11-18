@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { rm } from "node:fs/promises";
 import {
-  bellEnabled,
-  desktopNotificationsEnabled,
   kittyKeyboardEnabled,
   loadConfig,
+  notificationLevel,
   parseSections,
 } from "../src/config/config";
 import { configFile } from "../src/config/paths";
@@ -84,32 +83,52 @@ test("kittyKeyboard is a top-level setting that is off unless it is exactly true
   }
 });
 
-test("bell is a top-level setting that is on unless it is exactly false", async () => {
-  expect(bellEnabled((await loadConfig()).bell)).toBe(true);
+test("notifications is a top-level setting that defaults to desktop", async () => {
+  expect(notificationLevel(await loadConfig())).toEqual({ level: "desktop" });
 
-  await Bun.write(configFile, "bell = false\n");
+  for (const level of ["desktop", "bell", "off"] as const) {
+    await Bun.write(configFile, `notifications = "${level}"\n`);
 
-  expect(bellEnabled((await loadConfig()).bell)).toBe(false);
-
-  expect(bellEnabled((await loadConfig()).bell)).toBe(false);
-
-  for (const configured of ["false", 0, null, undefined, true]) {
-    expect(bellEnabled(configured)).toBe(true);
+    expect(notificationLevel(await loadConfig())).toEqual({ level });
   }
 });
 
-test("desktopNotifications is a top-level setting that is on unless it is exactly false", async () => {
+test("the old bell and desktopNotifications settings still pick the level", () => {
+  expect(notificationLevel({ bell: false })).toEqual({ level: "off" });
+  expect(notificationLevel({ desktopNotifications: false })).toEqual({
+    level: "bell",
+  });
   expect(
-    desktopNotificationsEnabled((await loadConfig()).desktopNotifications),
-  ).toBe(true);
+    notificationLevel({ bell: false, desktopNotifications: false }),
+  ).toEqual({ level: "off" });
 
-  await Bun.write(configFile, "desktopNotifications = false\n");
-
-  expect(
-    desktopNotificationsEnabled((await loadConfig()).desktopNotifications),
-  ).toBe(false);
-
-  for (const configured of ["false", 0, null, undefined, true]) {
-    expect(desktopNotificationsEnabled(configured)).toBe(true);
+  for (const configured of ["false", 0, null, true]) {
+    expect(
+      notificationLevel({ bell: configured, desktopNotifications: configured }),
+    ).toEqual({ level: "desktop" });
   }
+});
+
+test("an explicit notifications wins over the old settings", () => {
+  expect(
+    notificationLevel({
+      notifications: "desktop",
+      bell: false,
+      desktopNotifications: false,
+    }),
+  ).toEqual({ level: "desktop" });
+  expect(notificationLevel({ notifications: "bell", bell: false })).toEqual({
+    level: "bell",
+  });
+});
+
+test("an unknown notifications value means desktop and is reported", () => {
+  expect(notificationLevel({ notifications: "loud", bell: false })).toEqual({
+    level: "desktop",
+    unknown: "loud",
+  });
+  expect(notificationLevel({ notifications: true })).toEqual({
+    level: "desktop",
+    unknown: "true",
+  });
 });

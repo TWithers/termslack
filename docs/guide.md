@@ -75,13 +75,19 @@ Opening a conversation also marks it read in Slack (`conversations.mark`) once i
 
 ## Notifications
 
-termslack rings the terminal bell when a message arrives live that would get a mention marker: it mentions you, a user group you're in, or `@here`/`@channel`/`@everyone`, or it is in a DM or group DM (including thread replies that mention you). That is what every channel notifies for by default; a channel can be set to notify for every message, or for nothing (see Channel notifications). Your own messages, edits, deletes, history loads and the startup unread check never ring. While the terminal window has the focus nothing rings, in any conversation: the sidebar's markers are enough while you're looking at termslack (a terminal that never reports focus is treated as unfocused, so it rings). Several messages within about a second ring once, and never more than once every 5 seconds: what arrives within 5 seconds of a ring is held and rings together when they are up. Focusing the terminal, or Do Not Disturb starting, drops what is held. termslack doesn't know which conversations you've muted in Slack, or what you chose to be notified for in each channel there, so neither is followed; channels you mute in termslack (see Muting a channel) never ring.
+termslack alerts you (by default with a desktop notification, with the terminal bell as the fallback; see below) when a message arrives live that would get a mention marker: it mentions you, a user group you're in, or `@here`/`@channel`/`@everyone`, or it is in a DM or group DM (including thread replies that mention you). That is what every channel notifies for by default; a channel can be set to notify for every message, or for nothing (see Channel notifications). Your own messages, edits, deletes, history loads and the startup unread check never ring. While the terminal window has the focus nothing rings, in any conversation: the sidebar's markers are enough while you're looking at termslack (a terminal that never reports focus is treated as unfocused, so it rings). Several messages within about a second ring once, and never more than once every 5 seconds: what arrives within 5 seconds of a ring is held and rings together when they are up. Focusing the terminal, or Do Not Disturb starting, drops what is held. termslack doesn't know which conversations you've muted in Slack, or what you chose to be notified for in each channel there, so neither is followed; channels you mute in termslack (see Muting a channel) never ring.
 
-To turn the bell off, add a top-level setting to `~/.config/termslack/config.toml` (before any `[workspaces...]` table); it is on by default:
+One top-level setting in `~/.config/termslack/config.toml` (before any `[workspaces...]` table) decides how termslack alerts you:
 
 ```toml
-bell = false
+notifications = "desktop"
 ```
+
+- `"desktop"` (the default): a desktop notification through your terminal (see Desktop notifications below). The bell rings only where the terminal can't show one, and for the moment at startup before termslack knows, so a message gets one alert, not a popup and a bell.
+- `"bell"`: the bell only; termslack doesn't ask the terminal about desktop notifications.
+- `"off"`: nothing at all.
+
+Any other value means `"desktop"`, and the status line says so once. The older settings still work when `notifications` isn't set: `bell = false` means `"off"`, and `desktopNotifications = false` means `"bell"`.
 
 Nothing rings while Slack's Do Not Disturb is on. termslack reads `dnd.info` at startup (the `dnd:read` scope) and follows `dnd_updated` events, for both snooze and scheduled hours, and a scheduled window starts and ends by itself while termslack runs. If `dnd.info` fails or the permission is missing, termslack rings normally and says so in the status line.
 
@@ -99,15 +105,11 @@ The choice applies at once and follows the same rules as mentions: nothing while
 
 ### Desktop notifications
 
-Whatever rings the bell also shows a desktop notification through your terminal, so you see who wrote what from another window. It is on by default; `false` turns it off, with a top-level setting in `~/.config/termslack/config.toml`:
+With `notifications = "desktop"` (the default), what would ring the bell shows a desktop notification through your terminal instead, so you see who wrote what from another window. Set `notifications = "bell"` or `"off"` (see above) to have the bell only, or nothing.
 
-```toml
-desktopNotifications = false
-```
+It is the same message the bell would ring for, so the same rules apply (Do Not Disturb, the terminal being focused, several messages within about a second making one, at most one every 5 seconds). The title is the conversation and the author (`#random · Ana`; just the person for a DM), the body is the message as plain text, cut to 200 characters. A burst shows one notification, "3 new messages in #random" (or just "3 new messages" across conversations), with the newest message's text.
 
-It is the same message as the bell, so the same rules apply (Do Not Disturb, the terminal being focused, several messages within about a second making one, at most one every 5 seconds). The title is the conversation and the author (`#random · Ana`; just the person for a DM), the body is the message as plain text, cut to 200 characters. A burst shows one notification, "3 new messages in #random" (or just "3 new messages" across conversations), with the newest message's text.
-
-Termslack sends the notification as an escape code, so it comes from the terminal itself, not from another program. That works in terminals that answer kitty's OSC 99 query (kitty and others; termslack asks at startup), in Solo (recognised by `TERM_PROGRAM=solo`), in Ghostty (recognised by its name, or `TERM_PROGRAM=ghostty`) and in iTerm2 (recognised by its name, or `TERM_PROGRAM=iTerm.app`). Where the terminal supports it, a DM or group DM is sent as critical, so it stands out from mentions; Solo doesn't document that, so it gets the plain notification. Under a multiplexer (Solo, tmux) the multiplexer decides what reaches the desktop: Solo shows its own notification or in-app toast, and tmux gets the bell only. iTerm2's notification has a single line of text, so it reads `title: body` (`#random · Ana: the message`) instead of a title above a body. Any other terminal gets the bell only, and the status line says once that desktop notifications aren't supported by this terminal. Nothing is sent when output isn't a terminal.
+Termslack sends the notification as an escape code, so it comes from the terminal itself, not from another program. That works in terminals that answer kitty's OSC 99 query (kitty and others; termslack asks at startup), in Solo (recognised by `TERM_PROGRAM=solo`), in Ghostty (recognised by its name, or `TERM_PROGRAM=ghostty`) and in iTerm2 (recognised by its name, or `TERM_PROGRAM=iTerm.app`). Where the terminal supports it, a DM or group DM is sent as critical, so it stands out from mentions; Solo doesn't document that, so it gets the plain notification. Under a multiplexer (Solo, tmux) the multiplexer decides what reaches the desktop: Solo shows its own notification or in-app toast, and tmux gets the bell only. iTerm2's notification has a single line of text, so it reads `title: body` (`#random · Ana: the message`) instead of a title above a body. Any other terminal gets the bell instead, and the status line says once that desktop notifications aren't supported by this terminal. Until termslack has the terminal's answer at startup, and when output isn't a terminal, the bell rings and nothing else is sent.
 
 In kitty (terminals that list kitty's `report` action), the notification is also clickable: clicking it brings the terminal forward and opens that conversation, and the thread for a thread reply. A conversation has one notification, which newer messages replace instead of stacking, and a DM is critical where the terminal supports it. A conversation's notification is closed once you open it in termslack, or switch back to the terminal with it open.
 
