@@ -1320,3 +1320,44 @@ test("terminals without clickable notifications never get a close", async () => 
   signals.emit("SIGTERM");
   await finished;
 });
+
+test("quitting closes every clickable notification still shown, before the terminal is restored", async () => {
+  const { terminal, signals, finished } = await startKitty();
+
+  await say(random, `<@${me}> left-one`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+  await say(general, `<@${me}> left-two`);
+  await waitFor(() => osc99Written(terminal).length === 4);
+
+  terminal.stdin.write(clickReport(random));
+  await waitFor(() => closesWritten(terminal).length === 1);
+
+  signals.emit("SIGTERM");
+  await finished;
+
+  expect(closesWritten(terminal)).toEqual([
+    "termslack-C061EG9T2",
+    "termslack-C012AB3CD",
+  ]);
+  expect(terminal.written().lastIndexOf("p=close")).toBeLessThan(
+    terminal.written().lastIndexOf(focusOff),
+  );
+});
+
+test("a terminal without clickable notifications gets no close on quitting", async () => {
+  const { terminal, signals, finished } = await startRunning({
+    desktop: true,
+    probeTimeoutMs: 5000,
+    intervalMs: 10,
+  });
+
+  terminal.stdin.write(kittyAnswer + da1);
+  await Bun.sleep(30);
+  await say(random, `<@${me}> plain-exit`);
+  await waitFor(() => osc99Written(terminal).length === 2);
+
+  signals.emit("SIGTERM");
+  await finished;
+
+  expect(terminal.written()).not.toContain("p=close");
+});

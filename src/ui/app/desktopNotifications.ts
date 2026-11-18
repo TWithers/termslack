@@ -39,6 +39,8 @@ export type DesktopNotifier = {
   activate(identifier: string): ActivationTarget | undefined;
   /** Closes the conversation's notification, if this notifier can and it is still showing. */
   dismiss(conversationId: string): void;
+  /** Closes every notification still showing that a click could reach, for when termslack is no longer there to hear the click. */
+  closeAll(): void;
 };
 
 export const maxBodyLength = 200;
@@ -94,23 +96,32 @@ export function createDesktopNotifier(
   }
 
   const shown = new Map<string, ActivationTarget>();
+  const clickable = kind.code === "osc99" && kind.clickable === true;
+  const close = (identifier: string) =>
+    write(`\x1b]99;i=${identifier}:p=close;\x1b\\`);
 
   return {
     activate(identifier) {
       return shown.get(identifier);
     },
-    dismiss(conversationId) {
-      const identifier = osc99Identifier(conversationId);
+    dismiss: clickable
+      ? (conversationId) => {
+          const identifier = osc99Identifier(conversationId);
 
-      if (kind.code !== "osc99" || !kind.clickable) {
+          if (shown.delete(identifier)) {
+            close(identifier);
+          }
+        }
+      : () => {},
+    closeAll() {
+      if (!clickable) {
         return;
       }
 
-      if (!shown.delete(identifier)) {
-        return;
+      for (const identifier of [...shown.keys()]) {
+        shown.delete(identifier);
+        close(identifier);
       }
-
-      write(`\x1b]99;i=${identifier}:p=close;\x1b\\`);
     },
     show(notification) {
       const { title, body } = describeNotification(session, notification);

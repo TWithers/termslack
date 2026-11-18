@@ -133,16 +133,13 @@ export async function runApp(
         (bytes) => void stdout.write(bytes),
       );
 
-      if (notifier) {
-        notificationActions.useDismisser(notifier.dismiss);
-      }
-
       if (!notifier) {
         notice.set(noDesktopNotificationsNotice);
 
         return;
       }
 
+      notificationActions.useDismisser(notifier.dismiss);
       stopListeningForDesktop = props.session.subscribeToNotifications(
         notifier.show,
       );
@@ -168,8 +165,10 @@ export async function runApp(
     },
   );
   const quit = () => instance.unmount();
-  const restoreTerminal = () =>
-    void stdout.write(mouseReportingOff + focusReportingOff + restoreTitle);
+  const restoreTerminal = () => {
+    notifier?.closeAll();
+    stdout.write(mouseReportingOff + focusReportingOff + restoreTitle);
+  };
   const ringTheBell = ring ?? (() => void stdout.write(ringBell));
   const stopListeningForBells = bell
     ? props.session.subscribeToNotifications(ringTheBell)
