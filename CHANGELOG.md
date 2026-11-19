@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 - 2026-11-19
+
+### Added
+
+- Buttons in messages can be clicked: a button with a web address (`[View task]`) opens it in your browser; any other button or menu would send an action to the app that posted it, which termslack can't do, so the status line says so. Link buttons are also terminal hyperlinks.
+- The button under the mouse pointer is highlighted.
+- Legacy attachment buttons (`actions`) show as labels.
+
+### Fixed
+
+- Attachments built from Block Kit blocks (ClickUp's task messages, for one) show their blocks inside the colour bar instead of nothing, and give a notification text when they have no other.
+- Button labels no longer wrap across two lines.
+
 ## 0.3.0 - 2026-11-18
 
 ### Added
