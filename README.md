@@ -42,6 +42,7 @@ On macOS the binaries are unsigned. Allow a browser download in System Settings,
 | `t`               | Open a message's thread                 |
 | `r`               | React to a message                      |
 | `e` / `d`         | Edit / delete your message              |
+| `y`               | Copy a message's text                   |
 | `m`               | Channel menu (mute, details, move)      |
 | `M`               | Hide or show muted channels             |
 | `T`               | Change theme                            |

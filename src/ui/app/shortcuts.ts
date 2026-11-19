@@ -160,6 +160,12 @@ const listKeys = <Group extends "messages" | "thread">(
       description: "Delete the selected message (your own; asks first)",
     },
     {
+      id: `${group}.copy`,
+      group,
+      keys: ["y"],
+      description: "Copy the selected message's text to the clipboard",
+    },
+    {
       id: `${group}.write`,
       group,
       keys: ["i"],

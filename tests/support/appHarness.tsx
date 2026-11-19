@@ -119,6 +119,8 @@ export async function startAppHarness(
     saveTheme?: (name: string) => Promise<void>;
     /** Opens a link button's address. Default: nothing is opened. */
     openUrl?: (url: string) => void;
+    /** Puts text on the clipboard. Default: nothing is copied. */
+    copyToClipboard?: (text: string) => void;
   } = {},
 ): Promise<AppHarness> {
   const {
@@ -153,6 +155,7 @@ export async function startAppHarness(
       hideMutedMemory={options.hideMutedMemory}
       saveTheme={options.saveTheme}
       openUrl={options.openUrl ?? (() => {})}
+      copyToClipboard={options.copyToClipboard ?? (() => {})}
     />,
   );
   let size = { columns, rows };

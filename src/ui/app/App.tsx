@@ -1,8 +1,9 @@
-import { Box, useApp, useInput, useWindowSize } from "ink";
+import { Box, useApp, useInput, useStdout, useWindowSize } from "ink";
 import { Text } from "../SafeText";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { defaultRecentDms } from "../../config/config";
 import { openBrowser } from "../../setup/prompt";
+import { clipboardSequence } from "../clipboard";
 import { linkableUrl } from "../hyperlink";
 import type {
   CollapseMemory,
@@ -131,6 +132,8 @@ export type AppProps = {
   notificationActions?: NotificationActions;
   /** Opens a web address from a message's link button in the browser. Default: the system's browser launcher. */
   openUrl?: (url: string) => void;
+  /** Puts a message's text on the system clipboard. Default: writes the OSC 52 sequence to the terminal. */
+  copyToClipboard?: (text: string) => void;
 };
 
 const unsupportedActionText = "This action isn't currently supported";
@@ -214,8 +217,10 @@ export function App({
   mouse,
   notificationActions,
   openUrl = openBrowser,
+  copyToClipboard,
 }: AppProps) {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const { columns, rows } = useWindowSize();
 
   const version = useSession(session);
@@ -385,6 +390,9 @@ export function App({
     focusInput: requestFocus,
     focusList: (input) => requestFocus(listFor(input)),
     startReaction: reactionPrompt.open,
+    copyToClipboard:
+      copyToClipboard ??
+      ((text) => void stdout.write(clipboardSequence(text))),
     report: showStatus,
   });
 

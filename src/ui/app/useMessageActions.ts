@@ -3,6 +3,7 @@ import type { MessageRef } from "../../session/messageActions";
 import type { WorkspaceSession } from "../../session/workspaceSession";
 import { emptyInput, inputOf, isBlank } from "../input/textInput";
 import type { useDrafts } from "../input/useDrafts";
+import { messageCopyText } from "../messageCopyText";
 import { inputFor, type InputPane, type ListPane } from "./focus";
 import { pressed } from "./shortcuts";
 import { useConfirmPrompt } from "./useConfirmPrompt";
@@ -28,7 +29,8 @@ export type MessageActions = {
   prompt?: string;
   /**
    * Handles the keys that act on the selected message of a message list
-   * (`e` edit, `d` delete, `r` react, and the answer to a pending question).
+   * (`e` edit, `d` delete, `r` react, `y` copy, and the answer to a pending
+   * question).
    * Returns whether the key was used. Other actions on a message are added to
    * this one place.
    */
@@ -45,8 +47,8 @@ export type MessageActions = {
 
 /**
  * The actions on the selected message of either list: editing and deleting
- * the user's own messages, and reacting to any message. `report` is the status line's message line, for
- * hints and for why Slack refused.
+ * the user's own messages, and reacting to and copying any message. `report`
+ * is the status line's message line, for hints and for why Slack refused.
  *
  * Deleting asks first (see `useConfirmPrompt`): `prompt` is shown and the next
  * key answers it, and nothing else sees that key.
@@ -61,6 +63,7 @@ export function useMessageActions({
   focusInput,
   focusList,
   startReaction,
+  copyToClipboard,
   report,
 }: {
   session: WorkspaceSession;
@@ -75,6 +78,8 @@ export function useMessageActions({
   focusList(input: InputPane): void;
   /** Opens the emoji prompt for a message (see `useReactionPrompt`). */
   startReaction(message: MessageRef): void;
+  /** Puts text on the system clipboard (see `clipboardSequence`). */
+  copyToClipboard(text: string): void;
   report(message: string | undefined): void;
 }): MessageActions {
   const confirmDelete = useConfirmPrompt<MessageRef>({
@@ -121,6 +126,19 @@ export function useMessageActions({
     focusInput(next.input);
   }
 
+  function copy({ conversationId, ts }: MessageRef) {
+    const message = session.message(conversationId, ts);
+    const text = message ? messageCopyText(message, session) : "";
+
+    if (text === "") {
+      report("That message has no text to copy.");
+      return;
+    }
+
+    copyToClipboard(text);
+    report("Copied the message's text.");
+  }
+
   function startReact(message: MessageRef) {
     const { conversationId, ts } = message;
     const problem = session.reactionProblem(message);
@@ -143,10 +161,10 @@ export function useMessageActions({
 
       const ts = selectedTs(pane);
 
-      const is = (action: "edit" | "delete" | "react") =>
+      const is = (action: "edit" | "delete" | "react" | "copy") =>
         pressed(`${pane}.${action}`, input, key);
 
-      if (!(is("edit") || is("delete") || is("react"))) {
+      if (!(is("edit") || is("delete") || is("react") || is("copy"))) {
         return false;
       }
 
@@ -160,6 +178,8 @@ export function useMessageActions({
         startEdit(pane, message);
       } else if (is("delete")) {
         confirmDelete.ask(message, session.modifyProblem(message, "delete"));
+      } else if (is("copy")) {
+        copy(message);
       } else {
         startReact(message);
       }

@@ -61,11 +61,11 @@ export function sidebarKeyHints(hideMuted = false): string {
  * focus. Only keys that do something yet; later features add theirs.
  */
 export const messageKeyHints =
-  "j/k select · i write · Enter/t open or start thread · r react · e edit · d delete · PgUp/PgDn page · g/G oldest/newest · ? help";
+  "j/k select · i write · Enter/t open or start thread · r react · e edit · d delete · y copy · PgUp/PgDn page · g/G oldest/newest · ? help";
 
 /** The keys of the thread pane, which selects messages like the message pane. */
 export const threadKeyHints =
-  "j/k select · i reply · r react · e edit · d delete · PgUp/PgDn page · g/G first/newest · ? help · Esc close thread";
+  "j/k select · i reply · r react · e edit · d delete · y copy · PgUp/PgDn page · g/G first/newest · ? help · Esc close thread";
 
 /** The keys of the reply box under the thread. */
 export const threadInputKeyHints =
