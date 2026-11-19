@@ -310,9 +310,11 @@ function renderInline(
               : [segment],
           );
 
-    return span.style
-      ? segments.map((segment) => ({ ...segment, style: span.style }))
-      : segments;
+    return segments.map((segment) => ({
+      ...segment,
+      ...(span.style ? { style: span.style } : {}),
+      ...(span.action ? { action: span.action } : {}),
+    }));
   });
 }
 

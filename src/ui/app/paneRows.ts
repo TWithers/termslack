@@ -110,7 +110,7 @@ export function inlineRuns(
     const { text, trailing, ...style } = segmentStyle(segment, you);
 
     return [
-      { text, ...style },
+      { text: style.action ? text.replace(/ /g, "\u00a0") : text, ...style },
       ...(trailing && !compact
         ? [
             { text: " " },

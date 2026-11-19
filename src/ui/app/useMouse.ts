@@ -1,11 +1,19 @@
+import type { SpanAction } from "../../session/content";
 import { isChannel } from "../../session/events";
 import { useEffect, useRef, useState } from "react";
 import { inputOf } from "../input/textInput";
 import type { Composer } from "../input/useComposer";
 import type { useDrafts } from "../input/useDrafts";
+import { buttonAt, type HoveredButton } from "./buttons";
 import type { Focus, InputPane } from "./focus";
-import { hitTest, type MouseLayout } from "./hitTest";
-import { borderSize, paneInnerHeight, sidebarListHeight } from "./paneLayout";
+import { type Hit, hitTest, type MouseLayout } from "./hitTest";
+import {
+  borderSize,
+  paneInnerHeight,
+  panePadding,
+  sidebarListHeight,
+} from "./paneLayout";
+import type { PaneRow } from "./paneRows";
 import type { MouseInput, MouseSource } from "./mouse";
 import { visibleRowAt } from "./selection";
 import { lineKey, sidebarLineAt, type SidebarLine } from "./sidebarEntries";
@@ -13,12 +21,23 @@ import type { ChannelRef } from "./useConfirmPrompt";
 import type { PaneSelection } from "./usePaneSelection";
 import type { usePopups } from "./usePopups";
 
+type ListPane = "messages" | "thread";
+
+/** A list pane's interactive element label under the mouse pointer. */
+export type PaneHoveredButton = HoveredButton & { pane: ListPane };
+
+const sameHover = (
+  a: PaneHoveredButton | undefined,
+  b: PaneHoveredButton | undefined,
+) => a?.pane === b?.pane && a?.key === b?.key && a?.start === b?.start;
+
 /**
  * What the mouse does, from the terminal's reports (`source`) to the app's
  * state. `layout` says what is where; `sidebar`, `panes`, `popups` and
  * `question` give the hook what it moves and the actions it calls.
  *
- * Returns the sidebar line to draw hovered, if there is one.
+ * Returns the sidebar line and the message pane label to draw hovered, if
+ * there are any.
  */
 export function useMouse({
   source,
@@ -32,6 +51,7 @@ export function useMouse({
   requestFocus,
   openConversation,
   openThreadOf,
+  pressButton,
 }: {
   source: MouseSource | undefined;
   layout: MouseLayout;
@@ -60,9 +80,15 @@ export function useMouse({
   requestFocus(focus: Focus): void;
   openConversation(id: string, options: { remember: boolean }): void;
   openThreadOf(ts: string): void;
-}): { hoveredLine: SidebarLine | undefined } {
+  /** Does what an interactive element's label in a message (`[View task]`) does when clicked. */
+  pressButton(action: SpanAction): void;
+}): {
+  hoveredLine: SidebarLine | undefined;
+  hoveredButton: PaneHoveredButton | undefined;
+} {
   /** The sidebar's row (counted inside its border) under the mouse pointer, if one with something on it is. */
   const [hoveredRow, setHoveredRow] = useState<number>();
+  const [hoveredButton, setHoveredButton] = useState<PaneHoveredButton>();
   const pendingWheel = useRef<
     { column: number; row: number; delta: number } | undefined
   >(undefined);
@@ -153,27 +179,43 @@ export function useMouse({
     );
   }
 
-  /**
-   * A click on a list pane: focuses it and selects the message drawn under the
-   * pointer, as moving to it would. On a "N replies" line the thread opens too.
-   * A row with no message on it only focuses.
-   */
-  function clickPane(pane: "messages" | "thread", row: number) {
-    requestFocus(pane);
-
-    const selection = panes[pane];
+  /** The row of a list pane drawn at `row` (counted from the first row of its list), if there is one. */
+  function paneRowAt(pane: ListPane, row: number): PaneRow | undefined {
     const listHeight =
       paneInnerHeight(layout.bodyHeight) -
       (pane === "thread"
         ? layout.threadInputHeight
         : layout.messageInputHeight);
-    const clicked = visibleRowAt(selection.visible, listHeight, row);
+
+    return visibleRowAt(panes[pane].visible, listHeight, row);
+  }
+
+  /** The column of a pane's rows under `column` (counted from the pane's left border). */
+  const rowColumn = (column: number) => column - borderSize - panePadding;
+
+  /**
+   * A click on a list pane: focuses it and selects the message drawn under the
+   * pointer, as moving to it would. On an interactive element's label it also
+   * does what the label does, and on a "N replies" line the thread opens. A
+   * row with no message on it only focuses.
+   */
+  function clickPane(pane: ListPane, column: number, row: number) {
+    requestFocus(pane);
+
+    const clicked = paneRowAt(pane, row);
 
     if (clicked?.messageTs === undefined) {
       return;
     }
 
-    selection.select(clicked.messageTs);
+    panes[pane].select(clicked.messageTs);
+
+    const button = buttonAt(clicked, rowColumn(column));
+
+    if (button) {
+      pressButton(button.action);
+      return;
+    }
 
     if (pane === "messages" && clicked.kind === "replyCount") {
       openThreadOf(clicked.messageTs);
@@ -302,7 +344,7 @@ export function useMouse({
         return;
       case "messages":
       case "thread":
-        clickPane(hit.area, hit.row);
+        clickPane(hit.area, hit.column, hit.row);
         return;
       case "input":
       case "threadInput":
@@ -312,17 +354,18 @@ export function useMouse({
   }
 
   /**
-   * Hovers the sidebar row under the pointer, or nothing when the pointer is
-   * elsewhere, over a popup, or a y/n question is showing. Motion reports
-   * arrive constantly, so this only changes state (and so renders) when the
-   * hovered row does: moving over rows with nothing on them doesn't.
+   * Hovers the sidebar row or the message label under the pointer, or nothing
+   * when the pointer is elsewhere, over a popup, or a y/n question is showing.
+   * Motion reports arrive constantly, so this only changes state (and so
+   * renders) when what is hovered does: moving over rows with nothing on
+   * them, or along one label, doesn't.
    */
   function hoverAt(column: number, row: number) {
     const hit = hitTest(layout, column, row);
+    const canHover = !popupOpen && !questionPending;
     const onSidebar =
       hit.area === "sidebar" &&
-      !popupOpen &&
-      !questionPending &&
+      canHover &&
       sidebarLineAt(
         sidebar.lines,
         sidebar.scrollStart,
@@ -331,6 +374,26 @@ export function useMouse({
       ) !== undefined;
 
     setHoveredRow(onSidebar ? hit.row : undefined);
+
+    const next = canHover ? paneButtonAt(hit) : undefined;
+
+    setHoveredButton((current) => (sameHover(current, next) ? current : next));
+  }
+
+  /** The message label at a point, if the point is on one in a list pane. */
+  function paneButtonAt(hit: Hit): PaneHoveredButton | undefined {
+    if (hit.area !== "messages" && hit.area !== "thread") {
+      return undefined;
+    }
+
+    const paneRow = paneRowAt(hit.area, hit.row);
+    const button = paneRow && buttonAt(paneRow, rowColumn(hit.column));
+
+    if (!paneRow || !button) {
+      return undefined;
+    }
+
+    return { pane: hit.area, key: paneRow.key, start: button.start };
   }
 
   handleMouseRef.current = handleMouse;
@@ -342,13 +405,18 @@ export function useMouse({
   );
 
   useEffect(
-    () => source?.subscribeToBlur(() => setHoveredRow(undefined)),
+    () =>
+      source?.subscribeToBlur(() => {
+        setHoveredRow(undefined);
+        setHoveredButton(undefined);
+      }),
     [source],
   );
 
   useEffect(() => {
     if (popupOpen) {
       setHoveredRow(undefined);
+      setHoveredButton(undefined);
     }
   }, [popupOpen]);
 
@@ -362,5 +430,6 @@ export function useMouse({
             sidebarListHeight(layout.bodyHeight),
             hoveredRow,
           ),
+    hoveredButton: popupOpen || questionPending ? undefined : hoveredButton,
   };
 }

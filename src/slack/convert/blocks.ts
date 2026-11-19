@@ -2,6 +2,7 @@ import type {
   ContentBlock,
   ContentField,
   Span,
+  SpanAction,
   TextStyle,
 } from "../../session/content";
 import type { MessageContent } from "../../session/events";
@@ -267,10 +268,24 @@ function elementLabel(element: unknown): string | undefined {
   return text(element.text) ?? text(element.placeholder);
 }
 
+/** An element's link (a button's `url`), when it has one. */
+function elementAction(element: Record<string, any>): SpanAction {
+  return filled(element.url) ? { url: element.url } : {};
+}
+
+/** An element's label in brackets; interactive ones (not images) carry their action. */
 function labelSpan(element: unknown): Span[] {
   const label = elementLabel(element);
 
-  return label ? [{ markup: `[${escapeMarkup(label)}]` }] : [];
+  if (!label || !isObject(element)) {
+    return [];
+  }
+
+  const markup = `[${escapeMarkup(label)}]`;
+
+  return element.type === "image"
+    ? [{ markup }]
+    : [{ markup, action: elementAction(element) }];
 }
 
 function spacedSpans(groups: Span[][]): Span[] {
@@ -359,6 +374,30 @@ function layoutBlocks(block: Record<string, any>): ContentBlock[] {
     default:
       return unknownBlockText(block);
   }
+}
+
+/** The display blocks of any Block Kit block. Never throws. */
+function displayBlocks(block: unknown): ContentBlock[] {
+  if (!isObject(block)) {
+    return [];
+  }
+
+  return block.type === "rich_text"
+    ? richTextBlocks(block)
+    : layoutBlocks(block);
+}
+
+/** A legacy attachment button or menu as a label, menus marked with ▾. */
+function legacyActionSpan(action: unknown): Span[] {
+  if (!isObject(action) || !filled(action.text)) {
+    return [];
+  }
+
+  const label = action.type === "select" ? `${action.text} ▾` : action.text;
+
+  return [
+    { markup: `[${escapeMarkup(label)}]`, action: elementAction(action) },
+  ];
 }
 
 function attachmentColor(value: unknown): string | undefined {
@@ -455,12 +494,19 @@ function attachmentBlock(attachment: unknown): ContentBlock | undefined {
     footerText.length > 0
       ? [{ kind: "context", inline: [{ markup: footerText.join(" · ") }] }]
       : [];
+  const actions = spacedSpans(
+    arrayOf(attachment.actions).map(legacyActionSpan),
+  );
   const pretext = formattedBlocks(attachment.pretext);
   const blocks: ContentBlock[] = [
     ...author,
     ...title,
     ...formattedBlocks(attachment.text),
     ...(fields.length > 0 ? [{ kind: "fields" as const, fields }] : []),
+    ...arrayOf(attachment.blocks).flatMap(displayBlocks),
+    ...(actions.length > 0
+      ? [{ kind: "actions" as const, inline: actions }]
+      : []),
     ...images,
     ...footer,
   ];
@@ -483,12 +529,23 @@ function attachmentPlainText(attachment: unknown): string | undefined {
     return undefined;
   }
 
-  return [
+  const summary = [
     attachment.fallback,
     attachment.text,
     attachment.pretext,
     attachment.title,
   ].find((text) => typeof text === "string" && text.trim() !== "");
+
+  if (summary !== undefined) {
+    return summary;
+  }
+
+  const blockText = arrayOf(attachment.blocks)
+    .flatMap(blockPlainText)
+    .filter(filled)
+    .join("\n");
+
+  return blockText || undefined;
 }
 
 function fileName(file: unknown): string | undefined {
@@ -516,13 +573,7 @@ export function messageContent(message: Record<string, any>): MessageContent {
     .join("\n");
 
   const body = [
-    ...blocks
-      .filter(isObject)
-      .flatMap((block) =>
-        block.type === "rich_text"
-          ? richTextBlocks(block)
-          : layoutBlocks(block),
-      ),
+    ...blocks.flatMap(displayBlocks),
     ...attachments.flatMap((attachment) => attachmentBlock(attachment) ?? []),
   ];
 

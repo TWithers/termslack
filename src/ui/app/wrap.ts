@@ -1,3 +1,4 @@
+import type { SpanAction } from "../../session/content";
 import { terminalSafeText } from "../terminalSafeText";
 
 /** A stretch of text drawn in one style. */
@@ -11,6 +12,8 @@ export type Run = {
   strikethrough?: boolean;
   /** The address the text is a terminal hyperlink to (see `hyperlink`). */
   url?: string;
+  /** What clicking the text does: it is an interactive element's label (`[View task]`). */
+  action?: SpanAction;
 };
 
 type Cell = { grapheme: string; width: number; style: Omit<Run, "text"> };
@@ -25,7 +28,8 @@ function sameStyle(a: Omit<Run, "text">, b: Omit<Run, "text">): boolean {
     a.underline === b.underline &&
     a.italic === b.italic &&
     a.strikethrough === b.strikethrough &&
-    a.url === b.url
+    a.url === b.url &&
+    a.action === b.action
   );
 }
 

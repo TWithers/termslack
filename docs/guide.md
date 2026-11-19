@@ -232,9 +232,10 @@ The mouse is always on; there is no option to turn it off. termslack asks the te
 - Click a sidebar entry to open it, or a section heading to fold it.
 - Right-click a channel in the sidebar to select it and open its channel menu (click an item to choose it).
 - Click a message to select it, or its "N replies" line to open the thread.
+- Click a button in a message (`[View task]`, from Block Kit or a legacy attachment) to select the message and press it: a button with a web address opens it in your browser; any other button (or menu) would send an action to the app that posted it, which termslack can't do, so the status line says `This action isn't currently supported`. Link buttons are also terminal hyperlinks, for terminals that open those on a modified click.
 - Click a row in the switcher, search results, theme picker or channel menu to choose it. A click outside a popup closes it; a click during a `y/n` question cancels it.
 - The wheel moves the selection under the pointer without moving focus.
-- Hovering shades the sidebar row under the pointer.
+- Hovering shades the sidebar row or the message button under the pointer.
 
 With mouse reporting on, the terminal no longer selects text on a plain drag: hold `Shift` while dragging (`Option` in iTerm2) to select and copy as usual. Inside tmux, set `set -g mouse on` so clicks reach termslack.
 

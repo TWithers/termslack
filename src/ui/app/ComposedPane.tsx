@@ -4,6 +4,7 @@ import { ComposerView } from "../input/ComposerView";
 import type { Composer } from "../input/useComposer";
 import { theme } from "../theme";
 import { TitledBox, type TitledLabel } from "../TitledBox";
+import { type HoveredButton, withHoveredButton } from "./buttons";
 import { MessagePane } from "./MessagePane";
 import {
   borderSize,
@@ -50,6 +51,7 @@ export function ComposedPane({
   statusLine,
   focused,
   selection,
+  hoveredButton,
   listFocused,
   composer,
   inputFocused,
@@ -70,6 +72,8 @@ export function ComposedPane({
   /** Whether the pane or its input has focus: the border and title take the focus colour. */
   focused: boolean;
   selection: PaneSelection;
+  /** The interactive element label in the list under the mouse pointer, drawn in the hover background. */
+  hoveredButton?: HoveredButton;
   listFocused: boolean;
   composer: Composer;
   inputFocused: boolean;
@@ -116,11 +120,12 @@ export function ComposedPane({
         overflow="hidden"
       >
         <MessagePane
-          rows={
+          rows={withHoveredButton(
             listFocused
               ? withSelection(selection.visible, selection.selectedTs)
-              : selection.visible
-          }
+              : selection.visible,
+            hoveredButton,
+          )}
           width={contentWidth}
           height={Math.max(0, innerHeight - composer.height)}
         />

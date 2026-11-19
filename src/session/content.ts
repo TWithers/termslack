@@ -13,10 +13,20 @@ export type TextStyle = {
  * `<url|label>` and `:shortcode:` are resolved when the message is shown, and
  * `&amp;`, `&lt;` and `&gt;` are decoded then. A `"\n"` is a line break.
  */
-export type Span = { markup: string; style?: TextStyle };
+export type Span = { markup: string; style?: TextStyle; action?: SpanAction };
 
-/** A resolved inline piece: a message segment with the style it was written in. */
-export type StyledSegment = MessageSegment & { style?: TextStyle };
+/**
+ * What clicking an interactive element's label (`[View task]`) does: open
+ * `url` when the element has one. Without one it would send an action to the
+ * app that posted it, which termslack can't do.
+ */
+export type SpanAction = { url?: string };
+
+/** A resolved inline piece: a message segment with the style it was written in, and the action of the element it labels. */
+export type StyledSegment = MessageSegment & {
+  style?: TextStyle;
+  action?: SpanAction;
+};
 
 /** One title/value pair of a grid of fields. `wide` fields take the full width; the others sit two to a row when there is room. */
 export type ContentField<Inline = Span> = {
@@ -46,7 +56,7 @@ export type ContentBlock<Inline = Span> =
   | { kind: "header"; inline: Inline[] }
   /** Small text: Block Kit `context` elements, an attachment's author and footer. Shown dim. */
   | { kind: "context"; inline: Inline[] }
-  /** Interactive elements as their labels (`[Approve]`). Not clickable. */
+  /** Interactive elements as their labels (`[Approve]`), each label's spans carrying its `action`. */
   | { kind: "actions"; inline: Inline[] }
   /** An image as a link: its alt text or title linking to its address. */
   | { kind: "image"; inline: Inline[] }

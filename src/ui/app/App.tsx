@@ -2,6 +2,8 @@ import { Box, useApp, useInput, useWindowSize } from "ink";
 import { Text } from "../SafeText";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { defaultRecentDms } from "../../config/config";
+import { openBrowser } from "../../setup/prompt";
+import { linkableUrl } from "../hyperlink";
 import type {
   CollapseMemory,
   ConversationMemory,
@@ -127,7 +129,11 @@ export type AppProps = {
   mouse?: MouseSource;
   /** Where clicks on desktop notifications arrive. Default: none do. */
   notificationActions?: NotificationActions;
+  /** Opens a web address from a message's link button in the browser. Default: the system's browser launcher. */
+  openUrl?: (url: string) => void;
 };
+
+const unsupportedActionText = "This action isn't currently supported";
 
 const goneText = "That message has been deleted.";
 const furtherBackText =
@@ -207,6 +213,7 @@ export function App({
   saveTheme = async () => {},
   mouse,
   notificationActions,
+  openUrl = openBrowser,
 }: AppProps) {
   const { exit } = useApp();
   const { columns, rows } = useWindowSize();
@@ -741,7 +748,7 @@ export function App({
     threadInputHeight: thread.composer.height,
     popup: popups.region(),
   };
-  const { hoveredLine } = useMouse({
+  const { hoveredLine, hoveredButton } = useMouse({
     source: mouse,
     layout: mouseLayout,
     sidebar: {
@@ -764,6 +771,16 @@ export function App({
     requestFocus,
     openConversation,
     openThreadOf,
+    pressButton(action) {
+      const url = action.url && linkableUrl(action.url);
+
+      if (!url) {
+        showStatus(unsupportedActionText);
+        return;
+      }
+
+      openUrl(url);
+    },
   });
   const hoveredId = hoveredLine && lineKey(hoveredLine);
   const [pendingActivation, setPendingActivation] = useState<
@@ -1074,6 +1091,9 @@ export function App({
             statusLine={messagesStatus}
             focused={focus === "messages" || focus === "input"}
             selection={messages}
+            hoveredButton={
+              hoveredButton?.pane === "messages" ? hoveredButton : undefined
+            }
             listFocused={focus === "messages"}
             composer={composer}
             inputFocused={focus === "input"}
@@ -1106,6 +1126,9 @@ export function App({
             statusLine={threadStatus}
             focused={focus === "thread" || focus === "threadInput"}
             selection={thread.selection}
+            hoveredButton={
+              hoveredButton?.pane === "thread" ? hoveredButton : undefined
+            }
             listFocused={focus === "thread"}
             composer={thread.composer}
             inputFocused={focus === "threadInput"}

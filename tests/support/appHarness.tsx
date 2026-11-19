@@ -117,6 +117,8 @@ export async function startAppHarness(
     hideMutedMemory?: HideMutedMemory;
     /** Saves the theme chosen in the theme picker. Default: it is only kept. */
     saveTheme?: (name: string) => Promise<void>;
+    /** Opens a link button's address. Default: nothing is opened. */
+    openUrl?: (url: string) => void;
   } = {},
 ): Promise<AppHarness> {
   const {
@@ -150,6 +152,7 @@ export async function startAppHarness(
       collapseMemory={options.collapseMemory}
       hideMutedMemory={options.hideMutedMemory}
       saveTheme={options.saveTheme}
+      openUrl={options.openUrl ?? (() => {})}
     />,
   );
   let size = { columns, rows };

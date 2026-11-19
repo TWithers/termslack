@@ -220,3 +220,215 @@ describe("the signup bot message", () => {
     expect(messageContent(event).fallbackText).toContain("New Account");
   });
 });
+
+describe("attachments built from Block Kit blocks", () => {
+  /** Shaped like a ClickUp "Task created" message, with placeholder names and links. */
+  const taskCreated = {
+    subtype: "bot_message",
+    text: "*Task created* by ClickBot",
+    blocks: [
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: "*Task created* by ClickBot" },
+      },
+    ],
+    attachments: [
+      {
+        id: 1,
+        color: "#5f55ee",
+        fallback: "[no preview available]",
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: "*<https://example.com/t/1|Move account 100 from Ann to Bo>*",
+            },
+          },
+          {
+            type: "context",
+            elements: [
+              {
+                type: "image",
+                image_url: "https://example.com/logo.png",
+                alt_text: "Team / Space / Escalations",
+              },
+              { type: "mrkdwn", text: "in Escalations" },
+              {
+                type: "image",
+                image_url: "https://example.com/status.png",
+                alt_text: "Status",
+              },
+              { type: "mrkdwn", text: "(dev) Inbox" },
+            ],
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: { type: "plain_text", text: "View task" },
+                url: "https://example.com/t/1",
+              },
+              {
+                type: "button",
+                text: { type: "plain_text", text: "Edit task" },
+                value: "{}",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  test("show the blocks inside the attachment, beside its colour bar", () => {
+    expect(attachmentOf(taskCreated)).toMatchObject({
+      kind: "attachment",
+      color: "#5f55ee",
+      blocks: [{ kind: "paragraph" }, { kind: "context" }, { kind: "actions" }],
+    });
+    expect(shownLines(taskCreated)).toEqual([
+      "Task created by ClickBot",
+      "Move account 100 from Ann to Bo",
+      "Team / Space / Escalations in Escalations Status (dev) Inbox",
+      "[View task] [Edit task]",
+    ]);
+  });
+
+  test("come after the attachment's own title, text and fields", () => {
+    expect(
+      shownLines({
+        attachments: [
+          {
+            title: "Title",
+            text: "Text",
+            fields: [{ title: "F", value: "1" }],
+            blocks: [
+              { type: "section", text: { type: "mrkdwn", text: "Block" } },
+            ],
+          },
+        ],
+      }),
+    ).toEqual(["Title", "Text", "F|1", "Block"]);
+  });
+
+  test("give the plain text when the attachment has no fallback, text, pretext or title", () => {
+    const content = messageContent({
+      text: "",
+      attachments: [
+        {
+          blocks: [
+            { type: "section", text: { type: "mrkdwn", text: "From a block" } },
+          ],
+        },
+      ],
+    });
+
+    expect(content.fallbackText).toBe("From a block");
+  });
+
+  test("malformed attachment blocks never throw", () => {
+    expect(() =>
+      messageContent({
+        attachments: [
+          { blocks: "x" },
+          { blocks: [null, 3, { type: {} }, { type: "section", text: 4 }] },
+        ],
+      }),
+    ).not.toThrow();
+  });
+});
+
+describe("legacy attachment buttons", () => {
+  test("show as labels after the attachment's content, menus marked with ▾", () => {
+    expect(
+      shownLines({
+        attachments: [
+          {
+            text: "Pick one",
+            actions: [
+              { name: "go", text: "Approve", type: "button", value: "yes" },
+              { name: "no", text: "Reject", type: "button", style: "danger" },
+              { name: "who", text: "Choose someone", type: "select" },
+              { name: "bad", type: "button" },
+              "nope",
+            ],
+          },
+        ],
+      }),
+    ).toEqual(["Pick one", "[Approve] [Reject] [Choose someone ▾]"]);
+  });
+});
+
+describe("interactive element labels", () => {
+  const spansOf = (block: Raw) => {
+    const [shown] = messageContent({ blocks: [block] }).body ?? [];
+
+    return shown?.kind === "actions" ? shown.inline : [];
+  };
+
+  test("a button carries its address, and one without an address an empty action", () => {
+    expect(
+      spansOf({
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Open" },
+            url: "https://example.com",
+          },
+          { type: "button", text: { type: "plain_text", text: "Do" } },
+          {
+            type: "static_select",
+            placeholder: { type: "plain_text", text: "Pick" },
+          },
+        ],
+      }),
+    ).toEqual([
+      { markup: "[Open]", action: { url: "https://example.com" } },
+      { markup: " " },
+      { markup: "[Do]", action: {} },
+      { markup: " " },
+      { markup: "[Pick ▾]", action: {} },
+    ]);
+  });
+
+  test("a section's image accessory is no button", () => {
+    expect(
+      spansOf({
+        type: "section",
+        accessory: {
+          type: "image",
+          image_url: "https://example.com/a.png",
+          alt_text: "A picture",
+        },
+      }),
+    ).toEqual([{ markup: "[A picture]" }]);
+  });
+
+  test("a legacy button carries its address", () => {
+    const [attachment] = messageContent({
+      attachments: [
+        {
+          text: "t",
+          actions: [
+            { type: "button", text: "Go", url: "https://example.com/go" },
+          ],
+        },
+      ],
+    }).body!;
+
+    expect(attachment).toMatchObject({
+      blocks: [
+        { kind: "paragraph" },
+        {
+          kind: "actions",
+          inline: [
+            { markup: "[Go]", action: { url: "https://example.com/go" } },
+          ],
+        },
+      ],
+    });
+  });
+});

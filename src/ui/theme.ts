@@ -108,6 +108,8 @@ export type Theme = {
   /** A reaction you have added. */
   ownReactionText: string;
   ownReactionBackground: string;
+  /** An interactive element's label (`[View task]`) under the mouse pointer. */
+  buttonHoverBackground: string;
 };
 
 /** Slack's dark mode, near enough. */
@@ -195,6 +197,7 @@ export const slackDark: Theme = {
   reactionBackground: "#2b2e33",
   ownReactionText: "#ffffff",
   ownReactionBackground: "#1164a3",
+  buttonHoverBackground: "#3a3d42",
 };
 
 export const defaultThemeName = "slack-dark";

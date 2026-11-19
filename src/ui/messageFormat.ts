@@ -1,4 +1,4 @@
-import type { StyledSegment } from "../session/content";
+import type { SpanAction, StyledSegment } from "../session/content";
 import type { Author, Bot, Message, MessageContent } from "../session/events";
 import {
   type MessageSegment,
@@ -27,6 +27,8 @@ export type SegmentStyle = {
   trailing?: string;
   /** Where the segment, and its trailing address, link to. */
   url?: string;
+  /** What clicking the segment does: it labels an interactive element (`[View task]`). */
+  action?: SpanAction;
 };
 
 /** Says how each kind of segment looks; the renderer only says what the pieces are. `currentUserId` is who is looking, so a mention of them stands out. */
@@ -35,7 +37,7 @@ export function segmentStyle(
   currentUserId?: string,
 ): SegmentStyle {
   const style = segment.style;
-  const base = kindStyle(segment, currentUserId);
+  const base = withAction(kindStyle(segment, currentUserId), segment.action);
 
   if (!style) {
     return base;
@@ -48,6 +50,15 @@ export function segmentStyle(
     italic: style.italic,
     strikethrough: style.strike,
   };
+}
+
+/** A segment labelling an interactive element: it carries the element's action, and is a terminal hyperlink to its address when it has one. */
+function withAction(style: SegmentStyle, action?: SpanAction): SegmentStyle {
+  if (!action) {
+    return style;
+  }
+
+  return { ...style, action, ...(action.url ? { url: action.url } : {}) };
 }
 
 const inlineCodeStyle = () => ({

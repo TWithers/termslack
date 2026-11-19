@@ -116,6 +116,11 @@ export function themeFromPalette(palette: OmarchyPalette): Theme {
     reactionBackground: faint,
     ownReactionText: selectionText,
     ownReactionBackground,
+    buttonHoverBackground: mixColours(
+      paneBackground,
+      foreground,
+      isLight ? 0.2 : 0.18,
+    ),
   };
 }
 
