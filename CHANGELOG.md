@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-11-19
+
+### Added
+
+- `y` in the message pane or the thread pane copies the selected message's text to the clipboard, as plain text: what the pane shows without bold, code styling, quote or colour bars, with mentions, channels and emoji as drawn and a link's address after its label. Buttons, file names and `(edited)` are left out. It uses OSC 52, so the terminal does the copying (also over SSH); iTerm2 needs clipboard access allowed, Terminal.app doesn't support it and tmux needs `set -g set-clipboard on`.
+
 ## 0.4.0 - 2026-11-19
 
 ### Added

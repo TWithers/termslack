@@ -2,7 +2,7 @@
   "name": "termslack",
   "module": "src/index.ts",
   "type": "module",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A terminal Slack client: read and write in your channels and DMs from the keyboard.",
   "license": "MIT",
   "repository": {

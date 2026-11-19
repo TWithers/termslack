@@ -19,8 +19,8 @@ async function runCli(...args: string[]) {
 }
 
 test("package.json is at the current release version", () => {
-  expect(packageJson.version).toBe("0.4.0");
-  expect(versionText).toBe("termslack 0.4.0");
+  expect(packageJson.version).toBe("0.4.1");
+  expect(versionText).toBe("termslack 0.4.1");
 });
 
 test("--version and -v ask for the version", () => {
